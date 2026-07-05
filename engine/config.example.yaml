@@ -1,0 +1,32 @@
+# Engine configuration reference — copy to config.yaml and adjust.
+# Every key is optional; shown values are the defaults unless noted.
+
+# Model name (large-v3, large-v3-turbo, medium, small, base, tiny) or a local
+# path to a CTranslate2 model directory. A German fine-tuned checkpoint is
+# plugged in here — see engine/README.md "German fine-tuned checkpoints".
+model: large-v3
+
+# auto = CUDA when available, otherwise CPU. Explicit "cuda" fails hard when
+# no GPU is present (so a misconfigured prod box can't silently run 10x slow).
+device: auto
+
+# auto = float16 on CUDA, int8 on CPU.
+compute_type: auto
+
+# Where model weights are stored/staged. null = faster-whisper default cache.
+download_root: null
+
+# PRODUCTION / AIR-GAP: set true. The engine will never attempt a download;
+# missing weights become a hard error instead.
+local_files_only: false
+
+# 0 = let CTranslate2 pick.
+cpu_threads: 0
+num_workers: 1
+
+# Silero VAD pre-segmentation (cuts hallucinations on silence).
+vad:
+  enabled: true
+  threshold: 0.5
+  min_silence_duration_ms: 500
+  speech_pad_ms: 400
