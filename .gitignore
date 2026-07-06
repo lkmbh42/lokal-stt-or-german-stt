@@ -42,3 +42,5 @@ Thumbs.db
 .env
 *.pem
 *.key
+
+apps/desktop/config.yaml
