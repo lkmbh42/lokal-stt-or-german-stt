@@ -18,8 +18,10 @@ All four delivery phases are complete. Key documentation:
 
 | Topic | Where |
 |---|---|
-| Run Variant A | [apps/desktop/README.md](apps/desktop/README.md), [docs/runbook-desktop.md](docs/runbook-desktop.md) |
-| Deploy Variant B | [infra/PROVISIONING.md](infra/PROVISIONING.md) (air-gap), [docs/runbook-server.md](docs/runbook-server.md) (day-2 ops) |
+| **Step-by-step: deploy & run Variant A** | [DEPLOY-VARIANT-A.md](DEPLOY-VARIANT-A.md) |
+| **Step-by-step: deploy & run Variant B** | [DEPLOY-VARIANT-B.md](DEPLOY-VARIANT-B.md) |
+| Variant A operations | [apps/desktop/README.md](apps/desktop/README.md), [docs/runbook-desktop.md](docs/runbook-desktop.md) |
+| Variant B operations | [infra/PROVISIONING.md](infra/PROVISIONING.md) (air-gap), [docs/runbook-server.md](docs/runbook-server.md) (day-2 ops) |
 | Swap/update models | [docs/model-management.md](docs/model-management.md) |
 | Accessibility regression suites | [docs/a11y-walkthrough-desktop.md](docs/a11y-walkthrough-desktop.md), [docs/a11y-walkthrough-server.md](docs/a11y-walkthrough-server.md) |
 | German tuning findings | [docs/german-tuning-phase4.md](docs/german-tuning-phase4.md) |
