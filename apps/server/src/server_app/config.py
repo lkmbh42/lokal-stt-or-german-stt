@@ -30,6 +30,12 @@ class ServerSettings(BaseSettings):
     data_dir: Path = Path("/data")
     max_upload_mb: int = Field(default=500, ge=1)
 
+    default_daily_minutes: float = Field(default=0, ge=0)
+    """Server-wide daily quota in audio minutes (0 = unlimited). Per-user
+    overrides live on the user row and win over this default."""
+
+    default_monthly_minutes: float = Field(default=0, ge=0)
+
     max_concurrent_jobs: int = Field(default=1, ge=1)
     """GPU slots — must match worker concurrency and available VRAM
     (large-v3 float16 ≈ 4.7 GB per slot; int8 ≈ 3 GB)."""

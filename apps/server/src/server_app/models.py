@@ -32,6 +32,10 @@ class User(Base):
     role: Mapped[str] = mapped_column(String(16), default="user")  # "admin" | "user"
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    daily_minutes_limit: Mapped[float | None] = mapped_column(Float, default=None)
+    """Per-user daily transcription cap in audio minutes.
+    None = use the server default; 0 in the server default = unlimited."""
+    monthly_minutes_limit: Mapped[float | None] = mapped_column(Float, default=None)
 
     jobs: Mapped[list[Job]] = relationship(back_populates="user", cascade="all, delete-orphan")
 
@@ -62,6 +66,9 @@ class Job(Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
     duration: Mapped[float | None] = mapped_column(Float, default=None)
+    estimated_duration: Mapped[float | None] = mapped_column(Float, default=None)
+    """Probed at upload (ffprobe) — quota accounting and ETA before the
+    real duration is known."""
     options_json: Mapped[str] = mapped_column(Text, default="{}")
     audio_path: Mapped[str | None] = mapped_column(Text, default=None)
     transcript_path: Mapped[str | None] = mapped_column(Text, default=None)
@@ -69,3 +76,29 @@ class Job(Base):
     user: Mapped[User] = relationship(back_populates="jobs")
 
     CANCELABLE = ("queued", "processing")
+
+    @property
+    def billable_duration(self) -> float:
+        """Seconds counted against quota: real when known, else the probe."""
+        return self.duration if self.duration is not None else (self.estimated_duration or 0.0)
+
+
+class AuditLog(Base):
+    """Append-only audit trail.
+
+    Nothing in the application updates or deletes rows here — there are no
+    such endpoints and no ORM code paths; admins get read + CSV export only.
+    ``username`` is denormalized on purpose: entries stay meaningful even if
+    the user row is later deleted.
+    """
+
+    __tablename__ = "audit_log"
+    __table_args__ = (Index("ix_audit_created", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    user_id: Mapped[str | None] = mapped_column(String(32), default=None, index=True)
+    username: Mapped[str] = mapped_column(String(150), default="")
+    action: Mapped[str] = mapped_column(String(64), index=True)
+    detail: Mapped[str] = mapped_column(Text, default="")
+    ip: Mapped[str | None] = mapped_column(String(64), default=None)

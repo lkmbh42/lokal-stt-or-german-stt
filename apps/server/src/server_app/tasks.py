@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 
 from celery import Celery
 
+from server_app import audit
 from server_app.config import ServerSettings, get_settings
 from server_app.db import make_session_factory, session_scope
 from server_app.models import Job, utcnow
@@ -116,6 +117,16 @@ def run_transcription_job(job_id: str, settings: ServerSettings, transcriber: An
             job.duration = result.info.duration
             job.transcript_path = str(transcript_path)
             job.finished_at = utcnow()
+            audit.record(
+                session,
+                audit.JOB_COMPLETED,
+                user_id=job.user_id,
+                username=job.user.username,
+                detail=(
+                    f"{job.original_filename} ({result.info.duration / 60:.1f} min), "
+                    f"job {job_id}"
+                ),
+            )
         logger.info("job %s done (%.1fs audio)", job_id, result.info.duration)
     except JobCancelled:
         with session_scope(factory) as session:
@@ -132,3 +143,10 @@ def run_transcription_job(job_id: str, settings: ServerSettings, transcriber: An
                 job.status = "error"
                 job.error = str(exc)
                 job.finished_at = utcnow()
+                audit.record(
+                    session,
+                    audit.JOB_FAILED,
+                    user_id=job.user_id,
+                    username=job.user.username,
+                    detail=f"{job.original_filename}, job {job_id}: {exc}",
+                )

@@ -27,6 +27,10 @@ data/
 # Node
 node_modules/
 apps/desktop/frontend/dist/
+apps/server/frontend/dist/
+
+# TLS key material
+infra/tls/*.pem
 
 # OS / editor
 .DS_Store

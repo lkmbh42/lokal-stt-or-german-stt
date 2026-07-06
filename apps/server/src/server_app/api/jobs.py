@@ -24,10 +24,14 @@ from pydantic import ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from server_app import audit
 from server_app.auth.deps import CurrentUser, get_db
 from server_app.config import ServerSettings
 from server_app.models import Job
-from server_app.schemas import JobOut
+from server_app.probe import ProbeError, probe_duration_seconds
+from server_app.quota import QuotaExceeded, check_quota, quota_status
+from server_app.schemas import JobOut, QuotaOut
+from server_app.stats import eta_seconds_for, processing_speed
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -131,16 +135,47 @@ async def create_job(
         target.unlink(missing_ok=True)
         raise HTTPException(status_code=400, detail="Leere Datei")
 
+    try:
+        estimated = probe_duration_seconds(target)
+    except ProbeError as exc:
+        target.unlink(missing_ok=True)
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    try:
+        check_quota(db, user, settings, estimated)
+    except QuotaExceeded as exc:
+        target.unlink(missing_ok=True)
+        audit.record(
+            db,
+            audit.QUOTA_REJECTED,
+            user=user,
+            detail=f"{original} ({estimated / 60:.1f} min): {exc}",
+            ip=request.client.host if request.client else None,
+        )
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
+
     job = Job(
         id=job_id,
         user_id=user.id,
         original_filename=original,
         audio_path=str(target),
+        estimated_duration=estimated,
         options_json=options.model_dump_json(exclude_defaults=True),
     )
     db.add(job)
+    audit.record(
+        db,
+        audit.JOB_SUBMITTED,
+        user=user,
+        detail=f"{original} ({estimated / 60:.1f} min), job {job_id}",
+        ip=request.client.host if request.client else None,
+    )
     db.flush()
-    out_schema = JobOut.from_model(job, queue_position=_queue_position(db, job))
+    out_schema = JobOut.from_model(
+        job,
+        queue_position=_queue_position(db, job),
+        eta_seconds=eta_seconds_for(db, job, processing_speed(db)),
+    )
     db.commit()
     dispatch_job(request, job_id)
     return out_schema
@@ -159,7 +194,24 @@ def list_jobs(
         .scalars()
         .all()
     )
-    return [JobOut.from_model(j, queue_position=_queue_position(db, j)) for j in jobs]
+    speed = processing_speed(db)
+    return [
+        JobOut.from_model(
+            j,
+            queue_position=_queue_position(db, j),
+            eta_seconds=eta_seconds_for(db, j, speed),
+        )
+        for j in jobs
+    ]
+
+
+@router.get("/quota", response_model=QuotaOut)
+def my_quota(
+    request: Request, user: CurrentUser, db: Annotated[Session, Depends(get_db)]
+) -> QuotaOut:
+    settings = get_server_settings(request)
+    status = quota_status(db, user, settings)
+    return QuotaOut(**vars(status))
 
 
 @router.get("/{job_id}")
@@ -167,7 +219,11 @@ def get_job(
     job_id: str, user: CurrentUser, db: Annotated[Session, Depends(get_db)]
 ) -> JobOut:
     job = _own_job_or_404(db, user.id, job_id)
-    out = JobOut.from_model(job, queue_position=_queue_position(db, job))
+    out = JobOut.from_model(
+        job,
+        queue_position=_queue_position(db, job),
+        eta_seconds=eta_seconds_for(db, job, processing_speed(db)),
+    )
     if job.status == "done" and job.transcript_path:
         out.text_preview = _load_result(job).text[:2000]
     return out
@@ -175,19 +231,33 @@ def get_job(
 
 @router.delete("/{job_id}", status_code=204)
 def delete_job(
-    job_id: str, user: CurrentUser, db: Annotated[Session, Depends(get_db)]
+    request: Request,
+    job_id: str,
+    user: CurrentUser,
+    db: Annotated[Session, Depends(get_db)],
 ) -> Response:
     job = _own_job_or_404(db, user.id, job_id)
+    ip = request.client.host if request.client else None
     if job.status in Job.CANCELABLE:
         # cooperative cancel: the worker checks this flag between segments
         job.cancel_requested = True
         if job.status == "queued":
             job.status = "canceled"
+        audit.record(
+            db, audit.JOB_CANCELED, user=user, detail=f"job {job_id}", ip=ip
+        )
         return Response(status_code=204)
     for path in (job.audio_path, job.transcript_path):
         if path:
             Path(path).unlink(missing_ok=True)
     db.delete(job)
+    audit.record(
+        db,
+        audit.JOB_DELETED,
+        user=user,
+        detail=f"{job.original_filename}, job {job_id}",
+        ip=ip,
+    )
     return Response(status_code=204)
 
 

@@ -116,6 +116,14 @@ def fake_decode(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+@pytest.fixture(autouse=True)
+def fake_probe(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Uploads in tests are fake bytes — probe them as 5 s of audio."""
+    import server_app.api.jobs as jobs_api
+
+    monkeypatch.setattr(jobs_api, "probe_duration_seconds", lambda p: 5.0)
+
+
 @pytest.fixture
 def client(settings: ServerSettings, dispatcher: ManualDispatcher) -> Iterator[TestClient]:
     Base.metadata.create_all(make_engine(settings.database_url))

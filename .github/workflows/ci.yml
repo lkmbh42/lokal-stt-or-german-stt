@@ -75,6 +75,23 @@ jobs:
       - run: mypy src
         working-directory: apps/server
 
+  server-frontend:
+    name: Team-server frontend (vitest incl. axe-core gate, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/server/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/server/frontend/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
   compose-validate:
     name: docker-compose config validates
     runs-on: ubuntu-latest

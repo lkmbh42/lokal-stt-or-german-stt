@@ -1,5 +1,45 @@
 # Changelog
 
+## Phase 3 — Variant B Hardening (2026-07-06)
+
+### Added
+- **Quotas**: per-user daily/monthly audio-minute caps (per-user override →
+  server default → unlimited), enforced server-side at upload time via an
+  ffprobe duration probe (rejects before the GPU works and rejects non-audio
+  early); canceled/failed jobs don't burn quota; `GET /api/jobs/quota`.
+- **Audit log**: append-only table (no mutation surface exists) covering
+  logins (incl. failures with attempted username), job lifecycle
+  (submit/complete/fail/cancel/delete with durations), quota rejections and
+  user administration; admin list view with filters + CSV export
+  (Excel-compatible BOM). Migration `0002`.
+- **Queue ETA**: processing speed measured from recent jobs; queued jobs
+  report `eta_seconds` alongside `queue_position` — the UI renders both as
+  one German sentence in a live region ("Position 2 in der Warteschlange,
+  voraussichtlich 3 Minuten"); ETA is null (omitted) until real speed data
+  exists, never guessed.
+- **Multi-user frontend** (`apps/server/frontend`): accessible German React
+  UI — login (generic errors, `aria-describedby`), job submission (real file
+  input + record-and-upload via AudioWorklet→WAV), history with text-based
+  queue/progress status and announced transitions, quota banner, export
+  downloads with auth headers; **admin dashboard** (user management incl.
+  activate/deactivate and quota editing, audit log with filter + CSV,
+  system status: queue depth, measured speed factor, model/device, per-user
+  storage/minutes). axe-core gate on all views; token handling with
+  transparent refresh.
+- **nginx**: serves the built frontend, `/api` proxy; **TLS** variant config
+  (`tls.conf.example`, TLS 1.2/1.3, HSTS) + self-signed/internal-CA cert
+  script; published ports configurable.
+- **Offline provisioning runbook** (`infra/PROVISIONING.md`): image
+  save/load, model staging, egress verification checklist, model update and
+  backup/restore procedures.
+- **Load test**: `apps/server/scripts/load_test.py` + measured results in
+  `docs/load-test-phase3.md` — 10 concurrent users, 20 jobs, 20/20 succeeded,
+  queue throughput 2.95× realtime (base/CPU/Docker), job-list API p50 49 ms
+  under load. GPU re-run flagged as pre-go-live task.
+- NVDA walkthrough for the team UI (`docs/a11y-walkthrough-server.md`),
+  CI job for the server frontend.
+- Server suite now 50 backend tests + 11 frontend tests.
+
 ## Phase 2 — Variant B Core: Multi-User Team Server (2026-07-06)
 
 ### Added

@@ -1,0 +1,9 @@
+# Trial config for this machine (CPU-only): small, fast model.
+# For best German accuracy switch to:  model: large-v3  (3 GB download,
+# noticeably slower on CPU) or  model: small  as a middle ground.
+port: 8710
+engine:
+  model: base
+  device: auto
+live:
+  tick_seconds: 2.5

@@ -1,0 +1,94 @@
+/**
+ * Microphone capture: Web Audio → 16 kHz mono int16 PCM chunks.
+ *
+ * An AudioWorklet (inlined as a Blob module — no extra asset to serve)
+ * downsamples from the hardware rate and posts ~250 ms chunks. The caller
+ * ships each chunk over the live WebSocket.
+ */
+
+const WORKLET_SOURCE = `
+class PcmCaptureProcessor extends AudioWorkletProcessor {
+  constructor(options) {
+    super();
+    this.targetRate = options.processorOptions.targetRate;
+    this.chunkSize = options.processorOptions.chunkSize;
+    this.ratio = sampleRate / this.targetRate;
+    this.readPos = 0;
+    this.input = [];
+    this.output = new Int16Array(this.chunkSize);
+    this.outPos = 0;
+  }
+
+  process(inputs) {
+    const channel = inputs[0] && inputs[0][0];
+    if (!channel) return true;
+    for (let i = 0; i < channel.length; i++) this.input.push(channel[i]);
+
+    // linear-interpolation resample of everything currently buffered
+    while (this.readPos + this.ratio < this.input.length) {
+      const pos = this.readPos;
+      const idx = Math.floor(pos);
+      const frac = pos - idx;
+      const sample = this.input[idx] * (1 - frac) + this.input[idx + 1] * frac;
+      const clamped = Math.max(-1, Math.min(1, sample));
+      this.output[this.outPos++] = Math.round(clamped * 32767);
+      this.readPos += this.ratio;
+      if (this.outPos === this.chunkSize) {
+        this.port.postMessage(this.output.buffer.slice(0));
+        this.outPos = 0;
+      }
+    }
+    const consumed = Math.floor(this.readPos);
+    this.input = this.input.slice(consumed);
+    this.readPos -= consumed;
+    return true;
+  }
+}
+registerProcessor("pcm-capture", PcmCaptureProcessor);
+`;
+
+export interface Recorder {
+  stop: () => Promise<void>;
+}
+
+export async function startRecorder(
+  onChunk: (chunk: ArrayBuffer) => void,
+): Promise<Recorder> {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      channelCount: 1,
+      echoCancellation: true,
+      noiseSuppression: true,
+      autoGainControl: true,
+    },
+  });
+
+  const audioContext = new AudioContext();
+  const workletUrl = URL.createObjectURL(
+    new Blob([WORKLET_SOURCE], { type: "application/javascript" }),
+  );
+  try {
+    await audioContext.audioWorklet.addModule(workletUrl);
+  } finally {
+    URL.revokeObjectURL(workletUrl);
+  }
+
+  const source = audioContext.createMediaStreamSource(stream);
+  const node = new AudioWorkletNode(audioContext, "pcm-capture", {
+    numberOfInputs: 1,
+    numberOfOutputs: 0,
+    processorOptions: { targetRate: 16000, chunkSize: 4096 },
+  });
+  node.port.onmessage = (event: MessageEvent<ArrayBuffer>) => onChunk(event.data);
+  source.connect(node);
+
+  return {
+    async stop() {
+      node.port.onmessage = null;
+      source.disconnect();
+      node.disconnect();
+      for (const track of stream.getTracks()) track.stop();
+      await audioContext.close();
+    },
+  };
+}
