@@ -127,6 +127,16 @@ class Transcriber:
         mechanism for cooperative job cancellation.
         """
         options = options or TranscribeOptions()
+        # Tuning finding (Phase 4, docs/german-tuning-phase4.md): an
+        # initial_prompt combined with condition_on_previous_text=True makes
+        # Whisper echo the prompt as duplicated output on short audio. When
+        # the caller sets a prompt but leaves conditioning at its default,
+        # disable it; an explicit caller choice always wins.
+        if (
+            options.initial_prompt
+            and "condition_on_previous_text" not in options.model_fields_set
+        ):
+            options = options.model_copy(update={"condition_on_previous_text": False})
         if isinstance(audio, (str, Path)):
             audio_path = Path(audio)
             if not audio_path.is_file():

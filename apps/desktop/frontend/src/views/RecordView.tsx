@@ -139,6 +139,8 @@ export function RecordView() {
       setStatusLine("Aufnahme läuft.");
       announce("Aufnahme gestartet", "assertive");
       playEarcon("start", earconsEnabled);
+      // voice-control mode listens for this and releases the microphone
+      window.dispatchEvent(new Event("stt:recording-started"));
     } catch (startError) {
       const message =
         startError instanceof Error

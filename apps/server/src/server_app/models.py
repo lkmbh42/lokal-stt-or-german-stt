@@ -83,6 +83,25 @@ class Job(Base):
         return self.duration if self.duration is not None else (self.estimated_duration or 0.0)
 
 
+class RefreshToken(Base):
+    """Server-side refresh-token registry (denylist by omission).
+
+    A refresh token is only honored while its ``jti`` row exists and is not
+    revoked. Rotation revokes the old row; logout revokes explicitly; a
+    replayed token therefore fails even though its signature is valid.
+    """
+
+    __tablename__ = "refresh_tokens"
+
+    jti: Mapped[str] = mapped_column(String(32), primary_key=True)
+    user_id: Mapped[str] = mapped_column(
+        String(32), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
 class AuditLog(Base):
     """Append-only audit trail.
 

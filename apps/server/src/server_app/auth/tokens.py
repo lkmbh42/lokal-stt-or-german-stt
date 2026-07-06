@@ -4,12 +4,11 @@
 * Refresh tokens: longer-lived, exchanged for a fresh pair (rotation).
 * ``type`` claim prevents cross-use — a refresh token is never accepted
   where an access token is required and vice versa.
-
-Known tradeoff (documented for the Phase 4 security pass): there is no
-server-side refresh-token denylist yet, so a stolen refresh token stays
-valid until expiry. Mitigations today: 7-day default TTL and per-user
-``is_active`` (deactivation is checked on every request, killing access
-within one access-token lifetime).
+* Refresh tokens are additionally tracked server-side by ``jti`` (see
+  ``server_app.auth.refresh_store``): rotation revokes the old token, logout
+  revokes explicitly, and a replayed (already-rotated) refresh token is
+  rejected — closing the Phase 2 "stolen refresh token lives until expiry"
+  tradeoff.
 """
 
 from __future__ import annotations
@@ -26,10 +25,20 @@ class TokenError(Exception):
 
 
 @dataclass(frozen=True)
+class IssuedPair:
+    access_token: str
+    refresh_token: str
+    refresh_jti: str
+    refresh_expires_at: datetime
+
+
+@dataclass(frozen=True)
 class TokenPayload:
     user_id: str
     role: str
     token_type: str
+    jti: str
+    expires_at: datetime
 
 
 class TokenService:
@@ -43,25 +52,36 @@ class TokenService:
         self._access_ttl = access_ttl
         self._refresh_ttl = refresh_ttl
 
-    def _issue(self, user_id: str, role: str, token_type: str, ttl: timedelta) -> str:
+    def _issue(
+        self, user_id: str, role: str, token_type: str, ttl: timedelta
+    ) -> tuple[str, str, datetime]:
         now = datetime.now(timezone.utc)
-        return jwt.encode(
+        jti = uuid.uuid4().hex
+        expires_at = now + ttl
+        token = jwt.encode(
             {
                 "sub": user_id,
                 "role": role,
                 "type": token_type,
                 "iat": now,
-                "exp": now + ttl,
-                "jti": uuid.uuid4().hex,
+                "exp": expires_at,
+                "jti": jti,
             },
             self._secret,
             algorithm="HS256",
         )
+        return token, jti, expires_at
 
-    def issue_pair(self, user_id: str, role: str) -> tuple[str, str]:
-        return (
-            self._issue(user_id, role, "access", self._access_ttl),
-            self._issue(user_id, role, "refresh", self._refresh_ttl),
+    def issue_pair(self, user_id: str, role: str) -> IssuedPair:
+        access, _, _ = self._issue(user_id, role, "access", self._access_ttl)
+        refresh, refresh_jti, refresh_expires = self._issue(
+            user_id, role, "refresh", self._refresh_ttl
+        )
+        return IssuedPair(
+            access_token=access,
+            refresh_token=refresh,
+            refresh_jti=refresh_jti,
+            refresh_expires_at=refresh_expires,
         )
 
     def decode(self, token: str, expected_type: str) -> TokenPayload:
@@ -73,7 +93,13 @@ class TokenService:
             raise TokenError("Ungültiges Token") from exc
         if claims.get("type") != expected_type:
             raise TokenError("Falscher Token-Typ")
-        sub, role = claims.get("sub"), claims.get("role")
-        if not isinstance(sub, str) or not isinstance(role, str):
+        sub, role, jti = claims.get("sub"), claims.get("role"), claims.get("jti")
+        if not isinstance(sub, str) or not isinstance(role, str) or not isinstance(jti, str):
             raise TokenError("Ungültiges Token")
-        return TokenPayload(user_id=sub, role=role, token_type=expected_type)
+        return TokenPayload(
+            user_id=sub,
+            role=role,
+            token_type=expected_type,
+            jti=jti,
+            expires_at=datetime.fromtimestamp(claims["exp"], tz=timezone.utc),
+        )

@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 
+import { COMMANDS } from "../voice/commands";
+
 const SHORTCUTS: Array<{ keys: string; action: string }> = [
   { keys: "Strg + Alt + 1", action: "Bereich „Datei hochladen“ öffnen" },
   { keys: "Strg + Alt + 2", action: "Bereich „Aufnahme“ öffnen" },
@@ -46,6 +48,20 @@ export function ShortcutsDialog({ open, onClose }: { open: boolean; onClose: () 
       </table>
       <p>
         Alle Funktionen sind auch ohne Tastenkürzel per <kbd>Tab</kbd>-Navigation erreichbar.
+      </p>
+      <h3 id="voice-commands-heading">Sprachbefehle</h3>
+      <p>
+        Nach dem Aktivieren der Sprachsteuerung (Schaltfläche in der Navigation)
+        stehen folgende Befehle zur Verfügung:
+      </p>
+      <ul aria-labelledby="voice-commands-heading">
+        {COMMANDS.map((command) => (
+          <li key={command.action}>{command.label}</li>
+        ))}
+      </ul>
+      <p>
+        Während einer Audio-Aufnahme ist die Sprachsteuerung pausiert (das
+        Mikrofon gehört dann der Aufnahme).
       </p>
       <button type="button" className="action" onClick={onClose}>
         Schließen

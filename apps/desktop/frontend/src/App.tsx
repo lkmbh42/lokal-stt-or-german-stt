@@ -5,6 +5,7 @@ import { JobsView } from "./views/JobsView";
 import { RecordView } from "./views/RecordView";
 import { ShortcutsDialog } from "./views/ShortcutsDialog";
 import { UploadView } from "./views/UploadView";
+import { VoiceControl } from "./voice/VoiceControl";
 
 type ViewId = "upload" | "record" | "jobs";
 
@@ -83,6 +84,22 @@ function AppShell() {
               >
                 Tastenkürzel
               </button>
+            </li>
+            <li>
+              <VoiceControl
+                onAction={(action) => {
+                  if (action === "open-upload") switchView("upload");
+                  else if (action === "open-record") switchView("record");
+                  else if (action === "open-jobs") switchView("jobs");
+                  else if (action === "open-shortcuts") setShortcutsOpen(true);
+                  else if (action === "read-status") {
+                    announce(
+                      `Sie befinden sich im Bereich ${activeView.label}.`,
+                      "assertive",
+                    );
+                  }
+                }}
+              />
             </li>
           </ul>
         </nav>

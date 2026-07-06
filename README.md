@@ -9,14 +9,21 @@ Two deliverables share one core engine:
 
 | Variant | Description | Status |
 |---|---|---|
-| **Engine** (`/engine`) | Shared ASR core: faster-whisper + Silero VAD, German post-processing, all export formats, CLI | **Phase 0 — delivered** |
-| **Variant A** (`/apps/desktop`) | Single-user localhost tool (FastAPI + React, live mic + batch, accessible-first UI) | **Phase 1 — delivered** |
-| **Variant B** (`/apps/server`) | Multi-user team server: auth/RBAC/isolation, quotas, audit log, queue ETA, accessible web UI + admin dashboard | **Phases 2+3 — delivered** |
-| **Infra** (`/infra`) | Docker Compose stack, nginx (static + TLS), offline provisioning runbook, load-test baseline | **Phases 2+3 — delivered** |
+| **Engine** (`/engine`) | Shared ASR core: faster-whisper + Silero VAD, German post-processing, all export formats, CLI | **delivered** |
+| **Variant A** (`/apps/desktop`) | Single-user localhost tool: batch + live mic, accessible-first UI, voice-command mode | **delivered** |
+| **Variant B** (`/apps/server`) | Multi-user team server: auth/RBAC/isolation, quotas, audit log, queue ETA, web UI + admin dashboard | **delivered** |
+| **Infra** (`/infra`) | Docker Compose stack, nginx (static + TLS), offline provisioning runbook, load-test baseline | **delivered** |
 
-Quick start for Variant A: see [apps/desktop/README.md](apps/desktop/README.md)
-(`python run.py` after setup). Accessibility test artifacts live in
-[docs/](docs/).
+All four delivery phases are complete. Key documentation:
+
+| Topic | Where |
+|---|---|
+| Run Variant A | [apps/desktop/README.md](apps/desktop/README.md), [docs/runbook-desktop.md](docs/runbook-desktop.md) |
+| Deploy Variant B | [infra/PROVISIONING.md](infra/PROVISIONING.md) (air-gap), [docs/runbook-server.md](docs/runbook-server.md) (day-2 ops) |
+| Swap/update models | [docs/model-management.md](docs/model-management.md) |
+| Accessibility regression suites | [docs/a11y-walkthrough-desktop.md](docs/a11y-walkthrough-desktop.md), [docs/a11y-walkthrough-server.md](docs/a11y-walkthrough-server.md) |
+| German tuning findings | [docs/german-tuning-phase4.md](docs/german-tuning-phase4.md) |
+| Load-test baseline | [docs/load-test-phase3.md](docs/load-test-phase3.md) |
 
 ## Hard requirements (summary)
 

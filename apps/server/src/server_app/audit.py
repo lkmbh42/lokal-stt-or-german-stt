@@ -18,6 +18,8 @@ logger = logging.getLogger(__name__)
 # canonical action names (searchable in the admin UI)
 LOGIN = "auth.login"
 LOGIN_FAILED = "auth.login_failed"
+LOGOUT = "auth.logout"
+TOKEN_REPLAYED = "auth.token_replayed"
 JOB_SUBMITTED = "job.submitted"
 JOB_COMPLETED = "job.completed"
 JOB_FAILED = "job.failed"

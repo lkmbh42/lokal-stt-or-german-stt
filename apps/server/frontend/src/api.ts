@@ -21,6 +21,19 @@ export function isLoggedIn(): boolean {
 }
 
 export function logout(): void {
+  const refreshToken = localStorage.getItem(REFRESH_KEY);
+  const accessToken = localStorage.getItem(ACCESS_KEY);
+  if (refreshToken && accessToken) {
+    // best-effort server-side revocation; local cleanup happens regardless
+    void fetch("/api/auth/logout", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    }).catch(() => undefined);
+  }
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
 }

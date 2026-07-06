@@ -27,6 +27,10 @@ class ServerSettings(BaseSettings):
     access_token_minutes: int = Field(default=15, ge=1)
     refresh_token_days: int = Field(default=7, ge=1)
 
+    auth_rate_limit_attempts: int = Field(default=10, ge=1)
+    """Login/refresh attempts allowed per IP per window (429 beyond)."""
+    auth_rate_limit_window_seconds: float = Field(default=60.0, ge=1.0)
+
     data_dir: Path = Path("/data")
     max_upload_mb: int = Field(default=500, ge=1)
 

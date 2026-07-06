@@ -20,6 +20,7 @@ from server_app.auth.tokens import TokenService
 from server_app.config import ServerSettings, get_settings
 from server_app.db import make_session_factory
 from server_app.models import User
+from server_app.ratelimit import RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,14 @@ def create_app(
         access_ttl=timedelta(minutes=settings.access_token_minutes),
         refresh_ttl=timedelta(days=settings.refresh_token_days),
     )
+    app.state.auth_limiter = RateLimiter(
+        settings.auth_rate_limit_attempts, settings.auth_rate_limit_window_seconds
+    )
+    if len(settings.secret_key) < 32:
+        logger.warning(
+            "STT_SECRET_KEY is shorter than 32 characters — generate a proper "
+            "key with `openssl rand -hex 32`."
+        )
 
     @app.middleware("http")
     async def db_session_middleware(

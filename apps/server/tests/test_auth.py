@@ -91,16 +91,18 @@ class TestTokens:
         assert client.get("/api/auth/me", headers=headers).status_code == 401
 
     def test_token_signed_with_other_key_rejected(self, client: TestClient) -> None:
-        forged = TokenService("anderes-geheimnis").issue_pair("someid", "admin")[0]
+        forged = TokenService("anderes-geheimnis").issue_pair("someid", "admin").access_token
         headers = {"Authorization": f"Bearer {forged}"}
         assert client.get("/api/auth/me", headers=headers).status_code == 401
 
     def test_expired_token_rejected(self, client: TestClient) -> None:
         from datetime import timedelta
 
-        expired = TokenService(TEST_SECRET, access_ttl=timedelta(seconds=-1)).issue_pair(
-            "someid", "user"
-        )[0]
+        expired = (
+            TokenService(TEST_SECRET, access_ttl=timedelta(seconds=-1))
+            .issue_pair("someid", "user")
+            .access_token
+        )
         headers = {"Authorization": f"Bearer {expired}"}
         response = client.get("/api/auth/me", headers=headers)
         assert response.status_code == 401

@@ -1,5 +1,45 @@
 # Changelog
 
+## Phase 4 — Cross-Cutting Polish (2026-07-06)
+
+### Security pass
+- **Refresh-token registry** (migration `0003`): rotation revokes the used
+  token, logout revokes explicitly, replayed tokens are rejected *and
+  audited* (`auth.token_replayed`), deactivating a user revokes all their
+  sessions. Closes the Phase 2 tradeoff.
+- **Auth rate limiting**: per-IP sliding window on login/refresh
+  (configurable, 429 + Retry-After); in-process by design at this scale,
+  Redis path documented for wider scaling.
+- **Dependency audits**: `pip-audit` clean; `npm audit` finding
+  (esbuild dev-server advisory chain) resolved by upgrading both frontends
+  to vite 8 / vitest 4 — all suites re-verified green, 0 vulnerabilities.
+- nginx security headers (nosniff, frame-deny, referrer policy, CSP;
+  HSTS in the TLS config); startup warning for weak `STT_SECRET_KEY`.
+
+### German tuning pass (real samples, documented in docs/german-tuning-phase4.md)
+- Seven-sentence corpus (currency, dates, decimals, big numbers,
+  abbreviations, proper nouns) synthesized and run through the real engine:
+  Whisper's native German number formatting confirmed correct — the
+  conservative normalizer strategy is validated, opt-in rewrites stay off.
+- Vocabulary injection A/B: hotwords fix proper nouns cleanly;
+  `initial_prompt` with default conditioning caused prompt-echo duplication —
+  **engine now disables `condition_on_previous_text` automatically when a
+  prompt is set and the caller didn't choose explicitly** (regression-tested).
+
+### Voice-command mode (stretch goal, Variant A)
+- "Sprachsteuerung" toggle: fixed German command grammar (navigate sections,
+  open help, read status, end voice mode) recognized through the same live
+  WS + engine; closed grammar with umlaut-folding normalization
+  (unit-tested); auto-pauses when an audio recording claims the microphone;
+  commands documented in the in-app shortcuts dialog.
+
+### Final documentation
+- Deployment runbooks for both variants (`docs/runbook-desktop.md`,
+  `docs/runbook-server.md` incl. security operations and restore drill),
+  model swap/update procedure with validation checklist
+  (`docs/model-management.md`). Accessibility walkthroughs remain the living
+  regression checklists.
+
 ## Phase 3 — Variant B Hardening (2026-07-06)
 
 ### Added

@@ -147,6 +147,39 @@ class TestTranscribe:
         assert fake_backend.instances == []
 
 
+class TestPromptConditioningInteraction:
+    """Regression for the Phase 4 tuning finding: initial_prompt with default
+    conditioning duplicates output (prompt echo)."""
+
+    def test_prompt_disables_conditioning_by_default(
+        self, fake_backend: Recorder, wav: Path
+    ) -> None:
+        Transcriber(EngineConfig()).transcribe(
+            wav, TranscribeOptions(initial_prompt="Anthropic, Kubernetes")
+        )
+        call = fake_backend.instances[0].transcribe_calls[0]
+        assert call["condition_on_previous_text"] is False
+
+    def test_explicit_conditioning_choice_wins(
+        self, fake_backend: Recorder, wav: Path
+    ) -> None:
+        Transcriber(EngineConfig()).transcribe(
+            wav,
+            TranscribeOptions(
+                initial_prompt="Anthropic", condition_on_previous_text=True
+            ),
+        )
+        call = fake_backend.instances[0].transcribe_calls[0]
+        assert call["condition_on_previous_text"] is True
+
+    def test_no_prompt_keeps_default_conditioning(
+        self, fake_backend: Recorder, wav: Path
+    ) -> None:
+        Transcriber(EngineConfig()).transcribe(wav, TranscribeOptions())
+        call = fake_backend.instances[0].transcribe_calls[0]
+        assert call["condition_on_previous_text"] is True
+
+
 class TestOnSegmentCallback:
     def test_callback_receives_each_segment(self, fake_backend: Recorder, wav: Path) -> None:
         seen: list[float] = []

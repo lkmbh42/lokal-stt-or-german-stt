@@ -89,6 +89,12 @@ def update_user(
     if body.is_active is not None:
         user.is_active = body.is_active
         changes.append(f"is_active={body.is_active}")
+        if not body.is_active:
+            # deactivation kills every session: refresh tokens die instantly,
+            # access tokens die at the live is_active check on next request
+            from server_app.auth import refresh_store
+
+            refresh_store.revoke_all_for_user(db, user.id)
     if "daily_minutes_limit" in body.model_fields_set:
         user.daily_minutes_limit = body.daily_minutes_limit
         changes.append(f"daily_minutes_limit={body.daily_minutes_limit}")

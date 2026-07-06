@@ -94,6 +94,8 @@ def settings(tmp_path: Path) -> ServerSettings:
         max_upload_mb=1,
         bootstrap_admin_username="admin",
         bootstrap_admin_password="admin-passwort-123",
+        # functional tests log in freely; the rate limiter has its own tests
+        auth_rate_limit_attempts=10_000,
     )
 
 
