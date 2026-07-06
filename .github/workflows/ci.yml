@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  engine:
+    name: Engine (pytest, ruff, mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install ffmpeg (decode fallback used by fixture tests)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: pip install -e "./engine[dev]"
+      - name: Generate offline fixtures (silence/tone; German TTS is Windows-only)
+        run: python engine/scripts/make_fixtures.py || true
+      - name: Unit tests (no model weights)
+        run: pytest engine/tests -m "not model" -q
+      - run: ruff check engine
+      - run: mypy src
+        working-directory: engine
+
+  desktop-backend:
+    name: Desktop backend (pytest, ruff, mypy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -e ./engine -e "./apps/desktop/backend[dev]"
+      - run: pytest apps/desktop/backend/tests -q
+      - run: ruff check apps/desktop/backend apps/desktop/run.py
+      - run: mypy src
+        working-directory: apps/desktop/backend
+
+  desktop-frontend:
+    name: Desktop frontend (vitest incl. axe-core gate, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/desktop/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/desktop/frontend/package-lock.json
+      - run: npm ci
+      # vitest suite includes the axe-core accessibility gate:
+      # zero violations allowed to merge (project brief, Testing requirement)
+      - run: npm test
+      - run: npm run build

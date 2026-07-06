@@ -1,0 +1,29 @@
+# Desktop app configuration — copy to config.yaml and adjust.
+# All keys optional; values shown are defaults unless noted.
+
+# Loopback only. Anything else is rejected at startup (use Variant B for teams).
+host: 127.0.0.1
+port: 8710
+
+# Job database, uploaded audio and transcripts live here.
+data_dir: data
+
+max_upload_mb: 500
+
+# Engine settings — same schema as engine/config.example.yaml.
+engine:
+  model: large-v3            # or a local CTranslate2 path (air-gap: see below)
+  device: auto               # auto | cuda | cpu
+  compute_type: auto
+  # PRODUCTION / AIR-GAP:
+  # model: ./models/faster-whisper-large-v3
+  # local_files_only: true
+  vad:
+    enabled: true
+    threshold: 0.5
+
+# Live microphone transcription tuning.
+live:
+  tick_seconds: 3.0          # partial-update cadence (lower = snappier, more CPU)
+  silence_commit_seconds: 0.8
+  max_pending_seconds: 30.0

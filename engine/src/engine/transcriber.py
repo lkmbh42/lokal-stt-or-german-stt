@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -109,12 +110,21 @@ class Transcriber:
         return self._model
 
     def transcribe(
-        self, audio: AudioInput, options: TranscribeOptions | None = None
+        self,
+        audio: AudioInput,
+        options: TranscribeOptions | None = None,
+        on_segment: Callable[[Segment], None] | None = None,
     ) -> TranscriptResult:
         """Transcribe a file path or a 16 kHz mono float32 waveform.
 
         Decoding of compressed containers (mp3/m4a/mp4/flac/wav) happens
-        in-process via PyAV — no ffmpeg subprocess, no network.
+        in-process via PyAV (ffmpeg-CLI fallback) — no network.
+
+        ``on_segment`` is invoked with each *raw* segment as inference
+        produces it — callers use it for progress reporting
+        (``segment.end / info.duration``). An exception raised by the
+        callback aborts transcription and propagates, which is the designed
+        mechanism for cooperative job cancellation.
         """
         options = options or TranscribeOptions()
         if isinstance(audio, (str, Path)):
@@ -145,8 +155,10 @@ class Transcriber:
                 ),
             )
 
-            segments = [
-                Segment(
+            segments: list[Segment] = []
+            # materializing the generator runs inference, segment by segment
+            for idx, seg in enumerate(raw_segments):
+                segment = Segment(
                     id=idx,
                     start=float(seg.start),
                     end=float(seg.end),
@@ -161,9 +173,9 @@ class Transcriber:
                         for w in (seg.words or [])
                     ],
                 )
-                # materializes the generator: inference happens here
-                for idx, seg in enumerate(raw_segments)
-            ]
+                segments.append(segment)
+                if on_segment is not None:
+                    on_segment(segment)
 
         result = TranscriptResult(
             segments=segments,

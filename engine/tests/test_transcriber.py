@@ -147,6 +147,25 @@ class TestTranscribe:
         assert fake_backend.instances == []
 
 
+class TestOnSegmentCallback:
+    def test_callback_receives_each_segment(self, fake_backend: Recorder, wav: Path) -> None:
+        seen: list[float] = []
+        Transcriber(EngineConfig()).transcribe(wav, on_segment=lambda seg: seen.append(seg.end))
+        assert seen == [2.0]
+
+    def test_callback_exception_aborts_and_propagates(
+        self, fake_backend: Recorder, wav: Path
+    ) -> None:
+        class Cancelled(Exception):
+            pass
+
+        def cancel(_seg: object) -> None:
+            raise Cancelled()
+
+        with pytest.raises(Cancelled):
+            Transcriber(EngineConfig()).transcribe(wav, on_segment=cancel)
+
+
 class TestModelLifecycle:
     def test_lazy_loading_and_reuse(self, fake_backend: Recorder, wav: Path) -> None:
         transcriber = Transcriber(EngineConfig())

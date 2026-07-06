@@ -24,8 +24,9 @@ engine/tests/fixtures/*.wav
 out/
 data/
 
-# Node (later phases)
+# Node
 node_modules/
+apps/desktop/frontend/dist/
 
 # OS / editor
 .DS_Store
