@@ -1,0 +1,34 @@
+# Shared image for `api` and `worker` — same code, different command.
+# Build context is the repository root:
+#   docker build -f infra/Dockerfile.server .
+#
+# Air-gap: the image contains code only. Model weights are mounted read-only
+# from a pre-staged volume (see docker-compose.yml and
+# engine/scripts/download_model.py) — the container never downloads anything
+# at runtime (STT_ENGINE__LOCAL_FILES_ONLY=true enforces this).
+
+FROM python:3.11-slim-bookworm
+
+# libgomp1: OpenMP runtime for CTranslate2; ffmpeg: engine's decode fallback
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --create-home --uid 1000 stt
+WORKDIR /app
+
+COPY engine/pyproject.toml engine/README.md engine/
+COPY engine/src engine/src
+COPY apps/server/pyproject.toml apps/server/README.md apps/server/
+COPY apps/server/src apps/server/src
+COPY apps/server/alembic.ini apps/server/
+COPY apps/server/migrations apps/server/migrations
+
+RUN pip install --no-cache-dir ./engine ./apps/server
+
+RUN mkdir -p /data && chown stt:stt /data
+USER stt
+WORKDIR /app/apps/server
+
+# api (overridden for the worker in docker-compose.yml)
+CMD ["sh", "-c", "alembic upgrade head && uvicorn server_app.app:create_app --factory --host 0.0.0.0 --port 8000"]

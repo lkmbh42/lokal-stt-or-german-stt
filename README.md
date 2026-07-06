@@ -11,8 +11,8 @@ Two deliverables share one core engine:
 |---|---|---|
 | **Engine** (`/engine`) | Shared ASR core: faster-whisper + Silero VAD, German post-processing, all export formats, CLI | **Phase 0 — delivered** |
 | **Variant A** (`/apps/desktop`) | Single-user localhost tool (FastAPI + React, live mic + batch, accessible-first UI) | **Phase 1 — delivered** |
-| **Variant B** (`/apps/server`) | Multi-user team server (~10 users, Docker Compose, auth/RBAC/quotas) | Phase 2/3 — pending gate |
-| **Infra** (`/infra`) | Docker, nginx, TLS, offline model provisioning | Phase 2/3 — pending gate |
+| **Variant B** (`/apps/server`) | Multi-user team server (~10 users, Docker Compose, JWT/Argon2 auth, RBAC, per-user isolation) | **Phase 2 core — delivered** |
+| **Infra** (`/infra`) | Docker Compose stack (nginx, api, worker, Postgres, Redis); TLS + provisioning docs follow in Phase 3 | **Phase 2 core — delivered** |
 
 Quick start for Variant A: see [apps/desktop/README.md](apps/desktop/README.md)
 (`python run.py` after setup). Accessibility test artifacts live in

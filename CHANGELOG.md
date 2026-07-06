@@ -1,5 +1,48 @@
 # Changelog
 
+## Phase 2 — Variant B Core: Multi-User Team Server (2026-07-06)
+
+### Added
+- `apps/server` (`server_app` package): FastAPI API around the shared engine
+  with Postgres (SQLAlchemy 2.0 + Alembic migration incl. CI drift check),
+  Celery/Redis queue, per-user scoped job endpoints, global queue-position
+  reporting, upload validation, all export formats + zip.
+- Auth: Argon2id password hashing, JWT access/refresh tokens with rotation
+  and strict type separation, live `is_active` enforcement (deactivation
+  locks out existing tokens), bootstrap admin from env. Auth logic sits
+  behind a documented `AuthBackend` protocol so LDAP/AD bind auth can be
+  swapped in without touching tokens, RBAC or job code.
+- RBAC: `admin` (user management, all-jobs overview with owners, self-
+  demotion guard) vs `user` (own jobs only).
+- Per-user isolation: DB rows and storage paths scoped by `user_id`; foreign
+  job ids answer 404 byte-identical to missing ids (no existence oracle) —
+  covered by a dedicated authorization test suite.
+- Celery worker wrapping the engine: one lazily-loaded engine per worker
+  process, `STT_MAX_CONCURRENT_JOBS` = concurrency = GPU slots, Postgres-backed
+  progress via `on_segment`, cooperative cancellation via DB flag,
+  `acks_late` + no prefetch (GPU jobs are expensive).
+- `infra/`: docker-compose stack (nginx, api, worker, postgres, redis),
+  shared api/worker image, read-only pre-staged model volume
+  (`local_files_only=true` — no runtime downloads), `.env.example`,
+  configurable published port.
+- CI: server job with real Postgres service (`alembic upgrade head` +
+  `alembic check`), compose-config validation job.
+- Tests: 35 server tests — auth flows, token abuse (cross-type, forged,
+  expired), RBAC, isolation invariants, worker lifecycle/cancel/error paths.
+
+### Verified end-to-end (full Docker stack, real model, air-gap config)
+- `docker compose up` on this machine: admin bootstrap → user creation →
+  login → upload through nginx → Redis/Celery → worker transcribed real
+  German audio with weights mounted read-only (`local_files_only=true`) →
+  verbatim result exported.
+- Live isolation probes against the running stack: foreign job → 404,
+  non-admin on admin routes → 403, admin overview shows owners.
+
+### Explicit tradeoffs
+- No refresh-token denylist yet (rotation + live deactivation mitigate;
+  Phase 4 security pass). Auth rate limiting also Phase 4 per brief.
+- TLS termination and the multi-user frontend land in Phase 3.
+
 ## Phase 1 — Variant A: Single-User Desktop Tool (2026-07-06)
 
 ### Added

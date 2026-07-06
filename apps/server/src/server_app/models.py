@@ -1,0 +1,71 @@
+"""ORM models.
+
+IDs are 32-char UUID hex strings (portable across Postgres and the SQLite
+test database). Timestamps are timezone-aware UTC.
+"""
+
+from __future__ import annotations
+
+import uuid
+from datetime import datetime, timezone
+
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, String, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from server_app.db import Base
+
+
+def new_id() -> str:
+    return uuid.uuid4().hex
+
+
+def utcnow() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    username: Mapped[str] = mapped_column(String(150), unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(String(16), default="user")  # "admin" | "user"
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    jobs: Mapped[list[Job]] = relationship(back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def is_admin(self) -> bool:
+        return self.role == "admin"
+
+
+class Job(Base):
+    __tablename__ = "jobs"
+    __table_args__ = (
+        # every user-facing query filters by owner first — this index is the
+        # hot path for both listing and the isolation checks
+        Index("ix_jobs_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(32), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    source: Mapped[str] = mapped_column(String(16), default="upload")
+    original_filename: Mapped[str] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(16), default="queued", index=True)
+    progress: Mapped[float] = mapped_column(Float, default=0.0)
+    error: Mapped[str | None] = mapped_column(Text, default=None)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+    duration: Mapped[float | None] = mapped_column(Float, default=None)
+    options_json: Mapped[str] = mapped_column(Text, default="{}")
+    audio_path: Mapped[str | None] = mapped_column(Text, default=None)
+    transcript_path: Mapped[str | None] = mapped_column(Text, default=None)
+
+    user: Mapped[User] = relationship(back_populates="jobs")
+
+    CANCELABLE = ("queued", "processing")

@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "german-stt-server"
+version = "0.1.0"
+description = "Variant B: multi-user team server for local German STT (shared engine, Celery worker, Postgres)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "german-stt-engine",
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "SQLAlchemy>=2.0.30",
+    "alembic>=1.13",
+    "psycopg[binary]>=3.1",
+    "celery[redis]>=5.4",
+    "argon2-cffi>=23.1",
+    "PyJWT>=2.8",
+    "numpy>=1.24",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",
+    "mypy>=1.10",
+    "ruff>=0.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+server_app = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
+disable_error_code = ["import-untyped"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

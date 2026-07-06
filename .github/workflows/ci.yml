@@ -41,6 +41,48 @@ jobs:
       - run: mypy src
         working-directory: apps/desktop/backend
 
+  server:
+    name: Team server (pytest, migrations on Postgres, ruff, mypy)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: stt
+          POSTGRES_PASSWORD: stt
+          POSTGRES_DB: stt
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U stt -d stt"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -e ./engine -e "./apps/server[dev]"
+      - name: Apply migrations to real Postgres + drift check
+        env:
+          STT_DATABASE_URL: postgresql+psycopg://stt:stt@localhost:5432/stt
+          STT_SECRET_KEY: ci-only
+        working-directory: apps/server
+        run: |
+          alembic upgrade head
+          alembic check
+      - run: pytest apps/server/tests -q
+      - run: ruff check apps/server
+      - run: mypy src
+        working-directory: apps/server
+
+  compose-validate:
+    name: docker-compose config validates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env && docker compose config --quiet
+        working-directory: infra
+
   desktop-frontend:
     name: Desktop frontend (vitest incl. axe-core gate, build)
     runs-on: ubuntu-latest
