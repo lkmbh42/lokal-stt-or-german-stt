@@ -18,8 +18,8 @@ All four delivery phases are complete. Key documentation:
 
 | Topic | Where |
 |---|---|
-| **Step-by-step: deploy & run Variant A** | [DEPLOY-VARIANT-A.md](DEPLOY-VARIANT-A.md) |
-| **Step-by-step: deploy & run Variant B** | [DEPLOY-VARIANT-B.md](DEPLOY-VARIANT-B.md) |
+| **Step-by-step: deploy & run Variant A** | [DEPLOY-VARIANT-A.md](DEPLOY-VARIANT-A.md) (Deutsch) · [DEPLOY-VARIANT-A.en.md](DEPLOY-VARIANT-A.en.md) (English) |
+| **Step-by-step: deploy & run Variant B** | [DEPLOY-VARIANT-B.md](DEPLOY-VARIANT-B.md) (Deutsch) · [DEPLOY-VARIANT-B.en.md](DEPLOY-VARIANT-B.en.md) (English) |
 | Variant A operations | [apps/desktop/README.md](apps/desktop/README.md), [docs/runbook-desktop.md](docs/runbook-desktop.md) |
 | Variant B operations | [infra/PROVISIONING.md](infra/PROVISIONING.md) (air-gap), [docs/runbook-server.md](docs/runbook-server.md) (day-2 ops) |
 | Swap/update models | [docs/model-management.md](docs/model-management.md) |
