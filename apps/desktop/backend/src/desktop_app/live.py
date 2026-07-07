@@ -36,7 +36,7 @@ from engine.types import Segment
 from fastapi import WebSocket, WebSocketDisconnect
 
 from desktop_app.config import AppConfig
-from desktop_app.jobs import JobManager
+from desktop_app.jobs import JobManager, TranscriberLike
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +47,11 @@ SAMPLE_RATE = 16_000
 class LiveSession:
     config: AppConfig
     manager: JobManager
+    transcriber: TranscriberLike
+    """Model used for the incremental live ticks — may be a smaller, faster
+    one than the manager's batch model (config.live_engine). The save path
+    always re-transcribes with the accurate batch model via the manager."""
+
     options: TranscribeOptions = field(default_factory=TranscribeOptions)
     pending: np.ndarray = field(
         default_factory=lambda: np.zeros(0, dtype=np.float32)
@@ -76,9 +81,9 @@ class LiveSession:
         if self.pending_seconds < 1.0:
             return [], ""
         live_options = self.options.model_copy(
-            update={"word_timestamps": False, "beam_size": 1}
+            update={"word_timestamps": False, "beam_size": self.config.live.beam_size}
         )
-        result = self.manager.transcriber.transcribe(self.pending, live_options)
+        result = self.transcriber.transcribe(self.pending, live_options)
         if not result.segments:
             # nothing but silence/noise: keep a short tail, drop the rest
             self._drop_seconds(max(self.pending_seconds - 2.0, 0.0))
@@ -113,9 +118,9 @@ class LiveSession:
         if self.pending_seconds < 0.5:
             return []
         live_options = self.options.model_copy(
-            update={"word_timestamps": False, "beam_size": 1}
+            update={"word_timestamps": False, "beam_size": self.config.live.beam_size}
         )
-        result = self.manager.transcriber.transcribe(self.pending, live_options)
+        result = self.transcriber.transcribe(self.pending, live_options)
         committed = [self._offset(seg) for seg in result.segments]
         self.committed_segments.extend(committed)
         self._drop_seconds(self.pending_seconds)
@@ -146,7 +151,10 @@ def _parse_start_options(payload: dict[str, Any]) -> TranscribeOptions:
 
 
 async def handle_live_socket(
-    websocket: WebSocket, config: AppConfig, manager: JobManager
+    websocket: WebSocket,
+    config: AppConfig,
+    manager: JobManager,
+    live_transcriber: TranscriberLike,
 ) -> None:
     await websocket.accept()
     session: LiveSession | None = None
@@ -196,7 +204,12 @@ async def handle_live_socket(
                 except ValueError as exc:
                     await websocket.send_json({"type": "error", "message": str(exc)})
                     continue
-                session = LiveSession(config=config, manager=manager, options=options)
+                session = LiveSession(
+                    config=config,
+                    manager=manager,
+                    transcriber=live_transcriber,
+                    options=options,
+                )
                 ticker = asyncio.create_task(
                     _tick_loop(websocket, session, config, process_tick)
                 )

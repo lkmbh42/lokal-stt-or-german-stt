@@ -27,9 +27,14 @@ def _default_frontend_dist() -> Path:
 def create_app(
     config: AppConfig | None = None,
     transcriber: TranscriberLike | None = None,
+    live_transcriber: TranscriberLike | None = None,
 ) -> FastAPI:
     """Build the app. ``transcriber`` is injectable for tests; by default the
-    real engine is constructed (and loads weights lazily on the first job)."""
+    real engine is constructed (and loads weights lazily on the first job).
+
+    When ``config.live_engine`` is set, a second (typically smaller/faster)
+    model serves the live-recording partials while the main model keeps
+    producing the accurate batch transcripts."""
     config = config or AppConfig()
     config.ensure_dirs()
 
@@ -40,6 +45,21 @@ def create_app(
         engine = Transcriber(config.engine)
     else:
         engine = transcriber
+
+    live_engine: TranscriberLike
+    if live_transcriber is not None:
+        live_engine = live_transcriber
+    elif config.live_engine is not None:
+        from engine.transcriber import Transcriber
+
+        live_engine = Transcriber(config.live_engine)
+        logger.info(
+            "Live partials use a separate fast model (%s); batch jobs use %s.",
+            config.live_engine.model,
+            config.engine.model,
+        )
+    else:
+        live_engine = engine
 
     store = JobStore(config.db_path)
     manager = JobManager(config, store, engine)
@@ -66,7 +86,7 @@ def create_app(
 
     @app.websocket("/ws/live")
     async def live_socket(websocket: WebSocket) -> None:
-        await handle_live_socket(websocket, config, manager)
+        await handle_live_socket(websocket, config, manager, live_engine)
 
     dist = config.frontend_dist or _default_frontend_dist()
     if dist.is_dir():

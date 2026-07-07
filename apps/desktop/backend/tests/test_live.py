@@ -16,9 +16,8 @@ def pcm_silence(seconds: float) -> bytes:
 
 
 def _session(config: AppConfig, stub: StubTranscriber) -> LiveSession:
-    manager = JobManager.__new__(JobManager)  # session only needs .transcriber
-    manager._transcriber = stub  # type: ignore[attr-defined]
-    return LiveSession(config=config, manager=manager)
+    manager = JobManager.__new__(JobManager)  # save path unused in these tests
+    return LiveSession(config=config, manager=manager, transcriber=stub)
 
 
 class TestLiveSession:
@@ -136,3 +135,37 @@ class TestLiveWebSocket:
             ws.send_bytes(pcm_silence(1.0))
             message = ws.receive_json()
             assert message["type"] == "error"
+
+
+class TestDualModel:
+    def test_live_uses_fast_model_and_save_uses_accurate_model(
+        self, app_config: AppConfig
+    ) -> None:
+        """config.live_engine splits the work: live partials on the fast
+        model, the saved recording re-transcribed on the accurate one."""
+        from conftest import StubTranscriber, wait_for_status  # type: ignore
+
+        from desktop_app.app import create_app
+
+        batch_stub = StubTranscriber()
+        live_stub = StubTranscriber()
+        app = create_app(
+            app_config, transcriber=batch_stub, live_transcriber=live_stub
+        )
+        with TestClient(app) as client:
+            with client.websocket_connect("/ws/live") as ws:
+                ws.send_json({"type": "start"})
+                assert ws.receive_json() == {"type": "ready"}
+                ws.send_bytes(pcm_silence(2.0))
+                ws.send_json({"type": "stop", "save": True})
+                while True:
+                    message = ws.receive_json()
+                    if message["type"] == "stopped":
+                        break
+            # finalize ran on the live (fast) model...
+            assert len(live_stub.calls) == 1
+            assert live_stub.calls[0]["options"].beam_size == 1
+            # ...and the saved job on the accurate batch model, full quality
+            wait_for_status(client, message["job_id"], "done")
+            assert len(batch_stub.calls) == 1
+            assert batch_stub.calls[0]["options"].word_timestamps is True

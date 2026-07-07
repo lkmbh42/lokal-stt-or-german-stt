@@ -24,6 +24,11 @@ class LiveConfig(BaseModel):
     tick_seconds: float = Field(default=3.0, ge=0.5, le=15.0)
     """How often the pending audio window is (re)transcribed for partials."""
 
+    beam_size: int = Field(default=1, ge=1, le=10)
+    """Beam width for live ticks. 1 = fastest; raise on GPU hardware for
+    better partials (the saved recording is re-transcribed at full quality
+    regardless)."""
+
     silence_commit_seconds: float = Field(default=0.8, ge=0.2, le=5.0)
     """Trailing silence after the last recognized segment that finalizes it."""
 
@@ -46,6 +51,15 @@ class AppConfig(BaseModel):
     ``frontend/dist`` of this repository layout."""
 
     engine: EngineConfig = Field(default_factory=EngineConfig)
+    """The accurate model: batch uploads and the full-quality
+    re-transcription of saved recordings."""
+
+    live_engine: EngineConfig | None = None
+    """Optional second, faster model used ONLY for live partials while
+    recording (e.g. ``model: base``). Keeps the live view responsive on CPU
+    machines while the accurate model above produces the final transcript.
+    ``null`` (default) = live uses the main engine."""
+
     live: LiveConfig = Field(default_factory=LiveConfig)
 
     @field_validator("host")

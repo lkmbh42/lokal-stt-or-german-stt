@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-07-07 — Recording accuracy improvements
+
+- **Variant A dual-model support**: new `live_engine` config option runs the
+  live-recording preview on a small fast model while batch uploads and the
+  full-quality re-transcription of saved recordings use the accurate main
+  model. New `live.beam_size` knob for GPU hosts. Covered by a dedicated
+  dual-model test.
+- **Recommended model is now `large-v3-turbo`** for CPU machines (desktop
+  default config and both deployment guides): verified on this corpus that
+  it fixes recognition errors the `base` trial model made (e.g.
+  "zweitausendsechsundzwanzig" → `2026`, where base produced `2006`) at
+  roughly realtime speed on CPU. GPU servers keep `large-v3`.
+- Deployment guides (DE + EN) gained an accuracy section: live preview is
+  intentionally fast/rough, the saved transcript is authoritative; use the
+  vocabulary field for names/terms.
+
 ## Phase 4 — Cross-Cutting Polish (2026-07-06)
 
 ### Security pass

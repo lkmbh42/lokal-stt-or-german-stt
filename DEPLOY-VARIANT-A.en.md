@@ -78,11 +78,24 @@ Then open `apps\desktop\config.yaml` in an editor and pick a model:
 
 ```yaml
 engine:
-  model: large-v3     # best accuracy, ~3 GB download on first job
-  # model: small      # good balance on CPU-only machines
-  # model: base       # fastest, for quick trials
-  device: auto        # uses a CUDA GPU if present, otherwise CPU
+  model: large-v3-turbo   # recommended: near large-v3 accuracy, ~4x faster
+  # model: large-v3       # maximum accuracy (~3x slower than turbo on CPU)
+  # model: base           # quick trials only — noticeably less accurate
+  device: auto            # uses a CUDA GPU if present, otherwise CPU
+
+# Recommended on CPU-only machines: a small second model ONLY for the live
+# preview while recording. The final transcript always comes from the big
+# model above.
+live_engine:
+  model: base
 ```
+
+**Important for high recording accuracy:** the live preview during
+recording is deliberately fast and rough — what counts is the **saved**
+transcript: after you stop, the whole recording is re-transcribed at full
+quality with the big model (`engine.model`) and appears in the history.
+Enter frequently misrecognized names/terms into the "Fachvokabular" field
+beforehand — it measurably improves recognition.
 
 **Step 6 (air-gapped machines only):** pre-download the model on a
 connected machine and copy it over:

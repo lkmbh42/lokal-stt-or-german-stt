@@ -72,6 +72,13 @@ STT_ENGINE__MODEL=/models/faster-whisper-large-v3
 STT_ENGINE__LOCAL_FILES_ONLY=true
 ```
 
+**Genauigkeit:** `large-v3` liefert die beste Qualität und gehört auf einen
+GPU-Server. Läuft der Server **ohne GPU**, stattdessen `large-v3-turbo`
+verwenden (Schritt 3: `download_model.py large-v3-turbo`, dann
+`STT_ENGINE__MODEL=/models/faster-whisper-large-v3-turbo`) — nahezu gleiche
+deutsche Genauigkeit bei rund vierfacher Geschwindigkeit. Aufnahmen im
+Browser werden immer als vollständige Datei mit diesem Modell transkribiert.
+
 Optionale Regler (Standardwerte sind sinnvoll): `STT_HTTP_PORT` (Standard
 8080), `STT_MAX_CONCURRENT_JOBS` (GPU-Slots, siehe Teil 5),
 `STT_DEFAULT_DAILY_MINUTES` / `STT_DEFAULT_MONTHLY_MINUTES`

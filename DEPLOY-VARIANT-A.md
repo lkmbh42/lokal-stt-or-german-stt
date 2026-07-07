@@ -80,11 +80,24 @@ wählen:
 
 ```yaml
 engine:
-  model: large-v3     # beste Qualität, ~3 GB Download beim ersten Auftrag
-  # model: small      # guter Kompromiss auf CPU-Rechnern
-  # model: base       # schnellster Test-Modus
-  device: auto        # nutzt CUDA-GPU falls vorhanden, sonst CPU
+  model: large-v3-turbo   # empfohlen: nahezu large-v3-Genauigkeit, ~4x schneller
+  # model: large-v3       # maximale Genauigkeit (auf CPU ~3x langsamer als turbo)
+  # model: base           # nur für schnelle Tests — deutlich ungenauer
+  device: auto            # nutzt CUDA-GPU falls vorhanden, sonst CPU
+
+# Empfohlen auf CPU-Rechnern: kleines Zweitmodell NUR für die Live-Vorschau
+# beim Aufnehmen. Das endgültige Transkript kommt immer vom großen Modell.
+live_engine:
+  model: base
 ```
+
+**Wichtig für hohe Genauigkeit bei Aufnahmen:** Die Live-Vorschau während
+der Aufnahme ist bewusst schnell und grob — maßgeblich ist das
+**gespeicherte** Transkript: nach dem Stoppen wird die komplette Aufnahme
+mit dem großen Modell (`engine.model`) in voller Qualität neu transkribiert
+und erscheint im Verlauf. Häufig falsch erkannte Namen/Fachbegriffe vorab
+in das Feld „Fachvokabular" eintragen — das verbessert die Erkennung
+messbar.
 
 **Schritt 6 (nur für Rechner ohne Internet / Air-Gap):** Modell auf einem
 Rechner *mit* Internet vorab herunterladen und rüberkopieren:

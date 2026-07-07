@@ -10,9 +10,12 @@ data_dir: data
 
 max_upload_mb: 500
 
-# Engine settings — same schema as engine/config.example.yaml.
+# ACCURATE model: used for batch uploads and for the full-quality
+# re-transcription of saved recordings. Same schema as
+# engine/config.example.yaml.
 engine:
-  model: large-v3            # or a local CTranslate2 path (air-gap: see below)
+  model: large-v3            # best accuracy; large-v3-turbo = near-equal
+                             # accuracy at ~4x the speed (recommended on CPU)
   device: auto               # auto | cuda | cpu
   compute_type: auto
   # PRODUCTION / AIR-GAP:
@@ -22,8 +25,16 @@ engine:
     enabled: true
     threshold: 0.5
 
+# OPTIONAL second, faster model for the LIVE preview while recording.
+# Recommended on CPU-only machines: keeps partial text responsive while the
+# accurate model above still produces the final transcript. Remove/comment
+# out to run live on the main model (fine on GPU hardware).
+# live_engine:
+#   model: base
+
 # Live microphone transcription tuning.
 live:
   tick_seconds: 3.0          # partial-update cadence (lower = snappier, more CPU)
+  beam_size: 1               # raise to 5 on GPU hardware for better partials
   silence_commit_seconds: 0.8
   max_pending_seconds: 30.0
