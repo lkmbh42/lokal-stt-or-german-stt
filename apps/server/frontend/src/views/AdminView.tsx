@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useAnnouncer } from "../announcer";
-import { apiFetch, apiJson, AuthExpiredError } from "../api";
+import { apiFetch, apiJson, AuthExpiredError, formatDetail } from "../api";
 import type { AuditEntry, SystemStats, User } from "../types";
 
 function formatBytes(bytes: number): string {
@@ -17,6 +17,7 @@ export function AdminView({ onAuthExpired }: { onAuthExpired: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [createError, setCreateError] = useState<string | null>(null);
   const [auditFilter, setAuditFilter] = useState("");
 
   const guard = useCallback(
@@ -51,27 +52,57 @@ export function AdminView({ onAuthExpired }: { onAuthExpired: () => void }) {
     void loadAll();
   }, [loadAll]);
 
+  function rejectCreate(message: string) {
+    setCreateError(message);
+    announce(`Fehler: ${message}`, "assertive");
+  }
+
   async function createUser(event: React.FormEvent) {
     event.preventDefault();
+    setCreateError(null);
+    const username = newUsername.trim();
+    // mirror the server's rules client-side: instant, specific feedback
+    if (username.length < 3) {
+      rejectCreate("Benutzername muss mindestens 3 Zeichen lang sein.");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_.-]+$/.test(username)) {
+      rejectCreate(
+        "Benutzername darf nur Buchstaben, Zahlen sowie . _ - enthalten (keine Leer- oder Sonderzeichen).",
+      );
+      return;
+    }
+    if (newPassword.length < 10) {
+      rejectCreate(
+        `Passwort muss mindestens 10 Zeichen lang sein (aktuell ${newPassword.length}).`,
+      );
+      return;
+    }
     try {
       const response = await apiFetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: newUsername, password: newPassword }),
+        body: JSON.stringify({ username, password: newPassword }),
       });
       if (!response.ok) {
-        const detail = await response.json().then((d) => d.detail).catch(() => null);
-        throw new Error(typeof detail === "string" ? detail : "Anlegen fehlgeschlagen");
+        const payload = await response.json().catch(() => null);
+        throw new Error(
+          formatDetail((payload as { detail?: unknown } | null)?.detail) ??
+            "Anlegen fehlgeschlagen",
+        );
       }
-      announce(`Benutzer ${newUsername} angelegt.`, "assertive");
+      announce(`Benutzer ${username} angelegt.`, "assertive");
       setNewUsername("");
       setNewPassword("");
       await loadAll();
-    } catch (createError) {
-      guard(createError);
-      if (createError instanceof Error) {
-        announce(`Fehler: ${createError.message}`, "assertive");
+    } catch (submitError) {
+      if (submitError instanceof AuthExpiredError) {
+        onAuthExpired();
+        return;
       }
+      rejectCreate(
+        submitError instanceof Error ? submitError.message : "Anlegen fehlgeschlagen",
+      );
     }
   }
 
@@ -178,11 +209,15 @@ export function AdminView({ onAuthExpired }: { onAuthExpired: () => void }) {
         <h3 id="users-heading">Benutzerverwaltung</h3>
         <form className="stack" onSubmit={createUser} noValidate>
           <div>
-            <label htmlFor="new-username">Benutzername</label>
+            <label htmlFor="new-username">
+              Benutzername{" "}
+              <span className="hint">(mindestens 3 Zeichen; Buchstaben, Zahlen, . _ -)</span>
+            </label>
             <input
               id="new-username"
               type="text"
               value={newUsername}
+              aria-describedby={createError ? "create-user-error" : undefined}
               onChange={(event) => setNewUsername(event.target.value)}
             />
           </div>
@@ -195,9 +230,15 @@ export function AdminView({ onAuthExpired }: { onAuthExpired: () => void }) {
               type="password"
               autoComplete="new-password"
               value={newPassword}
+              aria-describedby={createError ? "create-user-error" : undefined}
               onChange={(event) => setNewPassword(event.target.value)}
             />
           </div>
+          {createError && (
+            <p id="create-user-error" className="job-status" data-status="error">
+              {createError}
+            </p>
+          )}
           <button type="submit" className="action">
             Benutzer anlegen
           </button>

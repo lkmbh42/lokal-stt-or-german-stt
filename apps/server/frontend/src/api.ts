@@ -92,6 +92,50 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   return response;
 }
 
+/** FastAPI error payloads: `detail` is a string for HTTPExceptions but an
+ * ARRAY of validation errors for 422s. Render both as readable German so
+ * forms never fall back to a meaningless generic failure. */
+const FIELD_LABELS: Record<string, string> = {
+  username: "Benutzername",
+  password: "Passwort",
+  daily_minutes_limit: "Tageskontingent",
+  monthly_minutes_limit: "Monatskontingent",
+  initial_prompt: "Fachvokabular",
+  hotwords: "Schlüsselwörter",
+};
+
+function translateValidationMsg(msg: string): string {
+  const min = msg.match(/at least (\d+) characters/);
+  if (min) return `mindestens ${min[1]} Zeichen erforderlich`;
+  const max = msg.match(/at most (\d+) characters/);
+  if (max) return `höchstens ${max[1]} Zeichen erlaubt`;
+  if (msg.includes("should match pattern")) {
+    return "enthält unzulässige Zeichen (erlaubt: Buchstaben, Zahlen, . _ -)";
+  }
+  if (msg.includes("Field required")) return "Pflichtfeld";
+  return msg;
+}
+
+export function formatDetail(detail: unknown): string | null {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        const rawLoc = (item as { loc?: unknown }).loc;
+        const field = Array.isArray(rawLoc) ? rawLoc[rawLoc.length - 1] : null;
+        const label =
+          typeof field === "string" ? (FIELD_LABELS[field] ?? field) : null;
+        const rawMsg = (item as { msg?: unknown }).msg;
+        const msg = typeof rawMsg === "string" ? translateValidationMsg(rawMsg) : null;
+        if (label && msg) return `${label}: ${msg}`;
+        return msg;
+      })
+      .filter((part): part is string => typeof part === "string");
+    if (parts.length > 0) return parts.join(" — ");
+  }
+  return null;
+}
+
 export async function apiJson<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await apiFetch(path, init);
   if (!response.ok) {
