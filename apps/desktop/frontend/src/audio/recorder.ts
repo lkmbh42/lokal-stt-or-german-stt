@@ -102,32 +102,42 @@ export async function startRecorder(
     },
   });
 
-  const audioContext = new AudioContext();
-  const workletUrl = URL.createObjectURL(
-    new Blob([WORKLET_SOURCE], { type: "application/javascript" }),
-  );
+  // From here on the mic is ACQUIRED: any setup failure must release it,
+  // otherwise the browser keeps "using the microphone" indefinitely and
+  // blocks every other app until the tab is closed.
+  let audioContext: AudioContext | null = null;
   try {
-    await audioContext.audioWorklet.addModule(workletUrl);
-  } finally {
-    URL.revokeObjectURL(workletUrl);
+    audioContext = new AudioContext();
+    const workletUrl = URL.createObjectURL(
+      new Blob([WORKLET_SOURCE], { type: "application/javascript" }),
+    );
+    try {
+      await audioContext.audioWorklet.addModule(workletUrl);
+    } finally {
+      URL.revokeObjectURL(workletUrl);
+    }
+
+    const source = audioContext.createMediaStreamSource(stream);
+    const node = new AudioWorkletNode(audioContext, "pcm-capture", {
+      numberOfInputs: 1,
+      numberOfOutputs: 0,
+      processorOptions: { targetRate: 16000, chunkSize: 4096 },
+    });
+    node.port.onmessage = (event: MessageEvent<ArrayBuffer>) => onChunk(event.data);
+    source.connect(node);
+
+    return {
+      async stop() {
+        node.port.onmessage = null;
+        source.disconnect();
+        node.disconnect();
+        for (const track of stream.getTracks()) track.stop();
+        await audioContext!.close();
+      },
+    };
+  } catch (setupError) {
+    for (const track of stream.getTracks()) track.stop();
+    await audioContext?.close().catch(() => undefined);
+    throw setupError;
   }
-
-  const source = audioContext.createMediaStreamSource(stream);
-  const node = new AudioWorkletNode(audioContext, "pcm-capture", {
-    numberOfInputs: 1,
-    numberOfOutputs: 0,
-    processorOptions: { targetRate: 16000, chunkSize: 4096 },
-  });
-  node.port.onmessage = (event: MessageEvent<ArrayBuffer>) => onChunk(event.data);
-  source.connect(node);
-
-  return {
-    async stop() {
-      node.port.onmessage = null;
-      source.disconnect();
-      node.disconnect();
-      for (const track of stream.getTracks()) track.stop();
-      await audioContext.close();
-    },
-  };
 }
