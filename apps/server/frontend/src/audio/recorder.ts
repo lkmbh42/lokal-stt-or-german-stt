@@ -75,6 +75,14 @@ export function describeMicError(error: unknown): string {
     case "NotReadableError":
     case "TrackStartError":
       return "Das Mikrofon wird gerade von einer anderen Anwendung verwendet.";
+    case "AbortError":
+      return (
+        "Das Mikrofon konnte nicht gestartet werden. Bitte die Seite neu " +
+        "laden (F5) und erneut versuchen — besonders nach geänderten " +
+        "Website-Berechtigungen. Hilft das nicht: anderes Programm schließen, " +
+        "das das Mikrofon belegt, oder unter Windows Einstellungen → " +
+        "Datenschutz → Mikrofon den Zugriff für Desktop-Apps erlauben."
+      );
     case "SecurityError":
       return "Der Browser verbietet Mikrofonzugriff in diesem Kontext (HTTPS erforderlich).";
     default:
