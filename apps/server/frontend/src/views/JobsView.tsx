@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAnnouncer } from "../announcer";
 import { apiFetch, apiJson, AuthExpiredError, downloadExport } from "../api";
-import { startRecorder, type Recorder } from "../audio/recorder";
+import { describeMicError, startRecorder, type Recorder } from "../audio/recorder";
 import { pcmChunksToWav } from "../audio/wav";
 import { EXPORT_FORMATS, type Job, type Quota } from "../types";
 
@@ -63,6 +63,7 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
   const [files, setFiles] = useState<File[]>([]);
   const [initialPrompt, setInitialPrompt] = useState("");
   const [recording, setRecording] = useState(false);
+  const [recordError, setRecordError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<Recorder | null>(null);
   const pcmRef = useRef<Int16Array[]>([]);
@@ -153,6 +154,7 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
 
   async function toggleRecording() {
     if (!recording) {
+      setRecordError(null);
       try {
         pcmRef.current = [];
         recorderRef.current = await startRecorder((chunk) => {
@@ -160,8 +162,11 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
         });
         setRecording(true);
         announce("Aufnahme gestartet", "assertive");
-      } catch {
-        announce("Fehler: Mikrofonzugriff nicht möglich", "assertive");
+      } catch (micError) {
+        // visible AND announced — a silent failure looks like a dead button
+        const message = describeMicError(micError);
+        setRecordError(message);
+        announce(`Fehler: ${message}`, "assertive");
       }
       return;
     }
@@ -253,10 +258,17 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
       <button
         type="button"
         className={recording ? "action danger" : "action secondary"}
+        aria-describedby={recordError ? "record-error" : undefined}
         onClick={() => void toggleRecording()}
       >
         {recording ? "Aufnahme stoppen und hochladen" : "Aufnahme starten"}
       </button>
+      {recording && <p>Aufnahme läuft — sprechen Sie jetzt.</p>}
+      {recordError && (
+        <p id="record-error" className="job-status" data-status="error">
+          {recordError}
+        </p>
+      )}
 
       <h3>Verlauf</h3>
       {jobs.length === 0 && <p>Noch keine Transkriptionen vorhanden.</p>}

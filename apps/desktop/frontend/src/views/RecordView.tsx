@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { TranscriptBatcher, useAnnouncer } from "../announcer";
 import { playEarcon } from "../audio/earcons";
-import { startRecorder, type Recorder } from "../audio/recorder";
+import { describeMicError, startRecorder, type Recorder } from "../audio/recorder";
 import type { LiveServerMessage } from "../types";
 
 type RecordingState = "idle" | "connecting" | "recording" | "stopping";
@@ -142,10 +142,14 @@ export function RecordView() {
       // voice-control mode listens for this and releases the microphone
       window.dispatchEvent(new Event("stt:recording-started"));
     } catch (startError) {
+      // DOMExceptions come from getUserMedia — translate them; plain Errors
+      // (e.g. WebSocket failure) already carry a German message
       const message =
-        startError instanceof Error
-          ? startError.message
-          : "Mikrofonzugriff nicht möglich";
+        startError instanceof DOMException
+          ? describeMicError(startError)
+          : startError instanceof Error
+            ? startError.message
+            : describeMicError(startError);
       setState("idle");
       setStatusLine(`Fehler: ${message}`);
       announce(`Fehler: ${message}`, "assertive");

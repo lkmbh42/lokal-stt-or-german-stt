@@ -51,6 +51,37 @@ export interface Recorder {
   stop: () => Promise<void>;
 }
 
+/** Translate getUserMedia failures into actionable German messages —
+ * "nothing happened" silent failures are not acceptable UX. */
+export function describeMicError(error: unknown): string {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    return (
+      "Mikrofonzugriff ist hier nicht verfügbar — die Seite muss über HTTPS " +
+      "oder localhost/127.0.0.1 geöffnet sein."
+    );
+  }
+  const name = error instanceof DOMException ? error.name : "";
+  switch (name) {
+    case "NotAllowedError":
+    case "PermissionDeniedError":
+      return (
+        "Mikrofonzugriff wurde blockiert. Bitte über das Berechtigungs-/" +
+        "Schloss-Symbol in der Adressleiste erlauben und unter Windows " +
+        "Einstellungen → Datenschutz → Mikrofon prüfen."
+      );
+    case "NotFoundError":
+    case "DevicesNotFoundError":
+      return "Kein Mikrofon gefunden. Bitte ein Mikrofon anschließen oder aktivieren.";
+    case "NotReadableError":
+    case "TrackStartError":
+      return "Das Mikrofon wird gerade von einer anderen Anwendung verwendet.";
+    case "SecurityError":
+      return "Der Browser verbietet Mikrofonzugriff in diesem Kontext (HTTPS erforderlich).";
+    default:
+      return `Mikrofonzugriff nicht möglich${name ? ` (${name})` : ""}.`;
+  }
+}
+
 export async function startRecorder(
   onChunk: (chunk: ArrayBuffer) => void,
 ): Promise<Recorder> {
