@@ -170,14 +170,27 @@ mitzusprechen — die einzige Möglichkeit, Zeichen zu erhalten, die Whisper
 nicht hören kann (Klammern, Doppelpunkt, Semikolon, Gedankenstrich,
 Anführungszeichen). Sagen Sie die Befehlswörter im Text mit:
 
-`Komma` → , · `Punkt` → . · `Fragezeichen` → ? · `Ausrufezeichen` → ! ·
-`Doppelpunkt` → : · `Semikolon` → ; · `Klammer auf/zu` → ( ) ·
-`Anführungszeichen auf/zu` → „ " · `Gedankenstrich` → – · `neue Zeile`.
+| Sagen | Ergibt | | Sagen | Ergibt |
+|---|---|---|---|---|
+| Komma | , | | Klammer auf/zu | ( ) |
+| Punkt | . | | eckige Klammer auf/zu | [ ] |
+| Fragezeichen | ? | | geschweifte Klammer auf/zu | { } |
+| Ausrufezeichen | ! | | Anführungszeichen auf/zu | „ " |
+| Doppelpunkt | : | | Gedankenstrich | – |
+| Semikolon | ; | | Bindestrich | - |
+| Schrägstrich | / | | Paragraf | § |
+| Prozentzeichen | % | | Sternchen | * |
+| neue Zeile | ⏎ | | neuer Absatz | ⏎⏎ |
+
+Zusatz: **„großschreiben"** vor einem Wort schreibt es groß (praktisch für
+Namen — „…nach großschreiben Cappel"); **„kleinschreiben"** klein. Ziffern um
+ein Komma werden zur Dezimalzahl („3 Komma 5" → „3,5").
 
 Nur die exakte Einzahlform ist ein Befehl, daher bleiben Inhaltswörter im
 Plural erhalten: „…mit Doppelpunkt Kommas Semikolon Punkten" → „…mit:
-Kommas; Punkten". Für normale Sprache ausgeschaltet lassen — dort setzt
-Whisper die Basis-Satzzeichen selbst.
+Kommas; Punkten". Sprechpausen werden abgefangen — von Whisper fälschlich
+gesetzte Kommas um Befehlswörter werden automatisch entfernt. Für normale
+Sprache ausgeschaltet lassen — dort setzt Whisper die Basis-Satzzeichen selbst.
 
 ---
 

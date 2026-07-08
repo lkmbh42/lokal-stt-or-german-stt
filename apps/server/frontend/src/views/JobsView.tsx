@@ -295,11 +295,13 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
         </label>
         {dictationMode && (
           <p className="hint">
-            Sprechen Sie die Satzzeichen mit: „Komma“ →&nbsp;, · „Punkt“ →&nbsp;. ·
+            Satzzeichen mitsprechen: „Komma“ →&nbsp;, · „Punkt“ →&nbsp;. ·
             „Fragezeichen“ →&nbsp;? · „Ausrufezeichen“ →&nbsp;! · „Doppelpunkt“ →&nbsp;: ·
-            „Semikolon“ →&nbsp;; · „Klammer auf/zu“ →&nbsp;( ) ·
-            „Anführungszeichen auf/zu“ →&nbsp;„ “ · „Gedankenstrich“ →&nbsp;– ·
-            „neue Zeile“.
+            „Semikolon“ →&nbsp;; · „Gedankenstrich“ →&nbsp;– · „Bindestrich“ →&nbsp;- ·
+            „Schrägstrich“ →&nbsp;/ · „Klammer auf/zu“ →&nbsp;( ) · „eckige/geschweifte
+            Klammer auf/zu“ →&nbsp;[ ] { } · „Anführungszeichen auf/zu“ →&nbsp;„ “ ·
+            „Paragraf“ →&nbsp;§ · „Prozentzeichen“ →&nbsp;% · „neue Zeile“ · „neuer Absatz“.
+            Namen groß schreiben: „großschreiben“ vor dem Wort.
           </p>
         )}
       </div>

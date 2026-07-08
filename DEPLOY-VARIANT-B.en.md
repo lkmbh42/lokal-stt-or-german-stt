@@ -169,13 +169,27 @@ Tick **"Diktatmodus"** before recording/uploading to speak punctuation
 aloud — the only way to get marks Whisper can't hear (parentheses, colons,
 semicolons, dashes, quotes). Say the command words in your speech:
 
-`Komma` → , · `Punkt` → . · `Fragezeichen` → ? · `Ausrufezeichen` → ! ·
-`Doppelpunkt` → : · `Semikolon` → ; · `Klammer auf/zu` → ( ) ·
-`Anführungszeichen auf/zu` → „ " · `Gedankenstrich` → – · `neue Zeile`.
+| Say | Get | | Say | Get |
+|---|---|---|---|---|
+| Komma | , | | Klammer auf/zu | ( ) |
+| Punkt | . | | eckige Klammer auf/zu | [ ] |
+| Fragezeichen | ? | | geschweifte Klammer auf/zu | { } |
+| Ausrufezeichen | ! | | Anführungszeichen auf/zu | „ " |
+| Doppelpunkt | : | | Gedankenstrich | – |
+| Semikolon | ; | | Bindestrich | - |
+| Schrägstrich | / | | Paragraf | § |
+| Prozentzeichen | % | | Sternchen | * |
+| neue Zeile | ⏎ | | neuer Absatz | ⏎⏎ |
+
+Extras: **"großschreiben"** before a word capitalizes it (handy for names —
+"…nach großschreiben Cappel"); **"kleinschreiben"** lowercases it. Digits
+around a comma become a decimal ("3 Komma 5" → "3,5").
 
 Only the exact singular form is a command, so plural content words survive:
-"…mit Doppelpunkt Kommas Semikolon Punkten" → "…mit: Kommas; Punkten". Leave
-it off for normal speech, where Whisper infers basic punctuation itself.
+"…mit Doppelpunkt Kommas Semikolon Punkten" → "…mit: Kommas; Punkten". And
+your own pauses are handled — Whisper's stray commas around command words are
+removed automatically. Leave the mode off for normal speech, where Whisper
+infers basic punctuation itself.
 
 ---
 

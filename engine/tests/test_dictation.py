@@ -85,6 +85,64 @@ class TestWhisperPunctuationAroundCommands:
         assert dictation.apply("erste Zeile Neue Zeile. zweite") == "Erste Zeile\nZweite"
 
 
+class TestExtendedVocabulary:
+    def test_bracket_types(self, dictation: DictationCommands) -> None:
+        assert dictation.apply("Wert eckige Klammer auf null eckige Klammer zu") == (
+            "Wert [null]"
+        )
+        assert (
+            dictation.apply("Menge geschweifte Klammer auf a geschweifte Klammer zu")
+            == "Menge {a}"
+        )
+
+    def test_round_bracket_synonyms(self, dictation: DictationCommands) -> None:
+        assert dictation.apply("a Klammer öffnen b Klammer schließen") == "A (b)"
+        assert dictation.apply("a runde Klammer auf b runde Klammer zu") == "A (b)"
+
+    def test_slash_percent_paragraph(self, dictation: DictationCommands) -> None:
+        assert dictation.apply("und Schrägstrich oder") == "Und/oder"
+        assert dictation.apply("fünfzig Prozentzeichen") == "Fünfzig%"
+        assert dictation.apply("siehe Paragraf zwölf") == "Siehe § zwölf"
+
+    def test_quotation_synonyms(self, dictation: DictationCommands) -> None:
+        assert (
+            dictation.apply("er sagte Gänsefüßchen auf ja Gänsefüßchen zu")
+            == "Er sagte „ja“"
+        )
+
+    def test_paragraph_vs_line(self, dictation: DictationCommands) -> None:
+        assert dictation.apply("eins neue Zeile zwei") == "Eins\nZwei"
+        assert dictation.apply("eins neuer Absatz zwei") == "Eins\n\nZwei"
+
+
+class TestDecimalComma:
+    def test_comma_between_numbers_is_decimal(self, dictation: DictationCommands) -> None:
+        assert dictation.apply("das sind drei Komma fünf") == "Das sind drei, fünf"
+        # only actual digits are treated as a decimal
+        assert dictation.apply("es waren 3 Komma 5 Grad") == "Es waren 3,5 Grad"
+
+    def test_comma_after_number_before_word_stays_normal(
+        self, dictation: DictationCommands
+    ) -> None:
+        assert dictation.apply("um 5 Komma dann weiter") == "Um 5, dann weiter"
+
+
+class TestCapitalizationDirectives:
+    def test_grossschreiben_capitalizes_next_word(
+        self, dictation: DictationCommands
+    ) -> None:
+        assert dictation.apply("wir fahren nach großschreiben cappel") == (
+            "Wir fahren nach Cappel"
+        )
+
+    def test_kleinschreiben_lowercases_next_word(
+        self, dictation: DictationCommands
+    ) -> None:
+        assert dictation.apply("das ist kleinschreiben Groß gemeint") == (
+            "Das ist groß gemeint"
+        )
+
+
 class TestCapitalization:
     def test_first_word_and_after_period(self, dictation: DictationCommands) -> None:
         assert dictation.apply("hallo Punkt wie geht es dir Fragezeichen") == (

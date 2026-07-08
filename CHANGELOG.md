@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-07-08 — Dictation mode: professional enhancement
+
+- Much broader command vocabulary: square/curly brackets (`eckige/geschweifte
+  Klammer auf/zu` → `[ ] { }`), `Schrägstrich` → `/`, `Prozentzeichen` → `%`,
+  `Paragraf` → `§`, `Sternchen` → `*`, plus synonyms (`Klammer öffnen/
+  schließen`, `Gänsefüßchen`, `Zeilenumbruch`) and `neuer Absatz` → blank line.
+- Longest-match command resolution (3-word before 2-word before 1-word).
+- Decimal comma: digits around a spoken "Komma" become "3,5" (attached).
+- Capitalization directives: `großschreiben` / `kleinschreiben` before a word
+  fix casing (handy for names Whisper lowercased).
+- Verified against the full original stress sentence: reproduces
+  `Ach, du meine Güte… (oder besser: Himmel!) – … : Kommas; Punkten; …`
+  structure exactly. 27 engine tests for the stage.
+
 ## 2026-07-07 — Dictation mode (spoken punctuation)
 
 - New opt-in **Diktatmodus**: spoken German command words are converted to
