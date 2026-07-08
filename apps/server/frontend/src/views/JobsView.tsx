@@ -64,6 +64,7 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
   const [initialPrompt, setInitialPrompt] = useState("");
   const [recording, setRecording] = useState(false);
   const [recordError, setRecordError] = useState<string | null>(null);
+  const [audioProcessing, setAudioProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<Recorder | null>(null);
   const pcmRef = useRef<Int16Array[]>([]);
@@ -157,9 +158,12 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
       setRecordError(null);
       try {
         pcmRef.current = [];
-        recorderRef.current = await startRecorder((chunk) => {
-          pcmRef.current.push(new Int16Array(chunk));
-        });
+        recorderRef.current = await startRecorder(
+          (chunk) => {
+            pcmRef.current.push(new Int16Array(chunk));
+          },
+          { audioProcessing },
+        );
         setRecording(true);
         announce("Aufnahme gestartet", "assertive");
       } catch (micError) {
@@ -255,6 +259,18 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
         Die Aufnahme wird nach dem Stoppen als Auftrag hochgeladen und in voller
         Qualität transkribiert.
       </p>
+      <label>
+        <input
+          type="checkbox"
+          checked={audioProcessing}
+          disabled={recording}
+          onChange={(event) => setAudioProcessing(event.target.checked)}
+        />{" "}
+        Browser-Audioverarbeitung (Rauschunterdrückung, Verstärkung){" "}
+        <span className="hint">
+          — normalerweise aus für beste Erkennung; nur bei lauter Umgebung einschalten
+        </span>
+      </label>
       <button
         type="button"
         className={recording ? "action danger" : "action secondary"}

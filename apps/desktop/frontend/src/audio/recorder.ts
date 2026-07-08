@@ -93,12 +93,16 @@ export function describeMicError(error: unknown): string {
 export async function startRecorder(
   onChunk: (chunk: ArrayBuffer) => void,
 ): Promise<Recorder> {
+  // Browser DSP (noise suppression / auto-gain / echo cancellation) is tuned
+  // for calls, not transcription, and can smear consonants — keep it off so
+  // the model receives clean audio. (The desktop live view is only a preview;
+  // the saved recording is re-transcribed at full quality either way.)
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: {
       channelCount: 1,
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
     },
   });
 

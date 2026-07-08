@@ -90,15 +90,26 @@ export function describeMicError(error: unknown): string {
   }
 }
 
+/** Browser DSP (noise suppression, auto-gain, echo cancellation) is tuned
+ * for phone calls, not transcription — it can smear consonants (e.g. the
+ * "s" in "Ausrufezeichen") and hurt STT accuracy. Off by default so the
+ * model receives clean, unprocessed audio; the recorder passes this through
+ * from a per-session setting. */
+export interface RecorderOptions {
+  audioProcessing?: boolean;
+}
+
 export async function startRecorder(
   onChunk: (chunk: ArrayBuffer) => void,
+  options: RecorderOptions = {},
 ): Promise<Recorder> {
+  const dsp = options.audioProcessing ?? false;
   const stream = await navigator.mediaDevices.getUserMedia({
     audio: {
       channelCount: 1,
-      echoCancellation: true,
-      noiseSuppression: true,
-      autoGainControl: true,
+      echoCancellation: dsp,
+      noiseSuppression: dsp,
+      autoGainControl: dsp,
     },
   });
 
