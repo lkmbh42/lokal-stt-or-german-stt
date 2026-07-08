@@ -65,7 +65,23 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
   const [recording, setRecording] = useState(false);
   const [recordError, setRecordError] = useState<string | null>(null);
   const [audioProcessing, setAudioProcessing] = useState(false);
-  const [dictationMode, setDictationMode] = useState(false);
+  // persisted so it doesn't silently reset on reload (a reset here is easy to
+  // miss and makes a recording come out with literal command words)
+  const [dictationMode, setDictationModeState] = useState(() => {
+    try {
+      return localStorage.getItem("stt.dictation") === "true";
+    } catch {
+      return false;
+    }
+  });
+  function setDictationMode(value: boolean) {
+    setDictationModeState(value);
+    try {
+      localStorage.setItem("stt.dictation", String(value));
+    } catch {
+      /* private mode: setting simply doesn't persist */
+    }
+  }
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<Recorder | null>(null);
   const pcmRef = useRef<Int16Array[]>([]);
@@ -167,7 +183,12 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
           { audioProcessing },
         );
         setRecording(true);
-        announce("Aufnahme gestartet", "assertive");
+        announce(
+          dictationMode
+            ? "Aufnahme im Diktatmodus gestartet. Satzzeichen bitte mitsprechen."
+            : "Aufnahme gestartet",
+          "assertive",
+        );
       } catch (micError) {
         // visible AND announced — a silent failure looks like a dead button
         const message = describeMicError(micError);
@@ -246,25 +267,6 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
             onChange={(event) => setInitialPrompt(event.target.value)}
           />
         </div>
-        <div>
-          <label>
-            <input
-              type="checkbox"
-              checked={dictationMode}
-              onChange={(event) => setDictationMode(event.target.checked)}
-            />{" "}
-            Diktatmodus — gesprochene Satzzeichen umsetzen
-          </label>
-          {dictationMode && (
-            <p className="hint">
-              Sprechen Sie die Satzzeichen mit: „Komma“ →&nbsp;, · „Punkt“ →&nbsp;. ·
-              „Fragezeichen“ →&nbsp;? · „Ausrufezeichen“ →&nbsp;! · „Doppelpunkt“ →&nbsp;: ·
-              „Semikolon“ →&nbsp;; · „Klammer auf/zu“ →&nbsp;( ) ·
-              „Anführungszeichen auf/zu“ →&nbsp;„ “ · „Gedankenstrich“ →&nbsp;– ·
-              „neue Zeile“. Gilt für Aufnahme und Datei-Upload.
-            </p>
-          )}
-        </div>
         {error && (
           <p id="submit-error" className="job-status" data-status="error">
             {error}
@@ -280,6 +282,27 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
         Die Aufnahme wird nach dem Stoppen als Auftrag hochgeladen und in voller
         Qualität transkribiert.
       </p>
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            checked={dictationMode}
+            disabled={recording}
+            onChange={(event) => setDictationMode(event.target.checked)}
+          />{" "}
+          <strong>Diktatmodus</strong> — gesprochene Satzzeichen umsetzen{" "}
+          <span className="hint">(gilt auch für Datei-Upload)</span>
+        </label>
+        {dictationMode && (
+          <p className="hint">
+            Sprechen Sie die Satzzeichen mit: „Komma“ →&nbsp;, · „Punkt“ →&nbsp;. ·
+            „Fragezeichen“ →&nbsp;? · „Ausrufezeichen“ →&nbsp;! · „Doppelpunkt“ →&nbsp;: ·
+            „Semikolon“ →&nbsp;; · „Klammer auf/zu“ →&nbsp;( ) ·
+            „Anführungszeichen auf/zu“ →&nbsp;„ “ · „Gedankenstrich“ →&nbsp;– ·
+            „neue Zeile“.
+          </p>
+        )}
+      </div>
       <label>
         <input
           type="checkbox"
@@ -300,7 +323,18 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
       >
         {recording ? "Aufnahme stoppen und hochladen" : "Aufnahme starten"}
       </button>
-      {recording && <p>Aufnahme läuft — sprechen Sie jetzt.</p>}
+      {recording && (
+        <p>
+          Aufnahme läuft — sprechen Sie jetzt.
+          {dictationMode && (
+            <>
+              {" "}
+              <strong>Diktatmodus aktiv:</strong> Satzzeichen mitsprechen
+              (z.&nbsp;B. „Komma“, „Punkt“, „Klammer auf“).
+            </>
+          )}
+        </p>
+      )}
       {recordError && (
         <p id="record-error" className="job-status" data-status="error">
           {recordError}
