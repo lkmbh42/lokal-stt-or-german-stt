@@ -93,6 +93,7 @@ async def create_job(
     file: UploadFile,
     initial_prompt: Annotated[str | None, Form()] = None,
     hotwords: Annotated[str | None, Form()] = None,
+    dictation: Annotated[bool, Form()] = False,
 ) -> JobOut:
     original = _sanitize_filename(file.filename)
     extension = Path(original).suffix.lower()
@@ -107,7 +108,9 @@ async def create_job(
 
     try:
         options = TranscribeOptions(
-            initial_prompt=initial_prompt or None, hotwords=hotwords or None
+            initial_prompt=initial_prompt or None,
+            hotwords=hotwords or None,
+            dictation_mode=dictation,
         )
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=json.loads(exc.json())) from exc

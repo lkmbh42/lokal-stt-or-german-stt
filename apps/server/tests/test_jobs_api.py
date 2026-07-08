@@ -64,6 +64,24 @@ class TestJobLifecycle:
         assert options.hotwords == "Müller"
         assert options.language == "de"
 
+    def test_dictation_flag_forwarded_to_engine(
+        self, client: TestClient, make_user, dispatcher, stub_transcriber
+    ) -> None:
+        make_user("alice", "alice-passwort-123")
+        alice = login(client, "alice", "alice-passwort-123")
+        upload(client, alice, "diktat.wav", data={"dictation": "true"})
+        dispatcher.run_all()
+        assert stub_transcriber.calls[0].dictation_mode is True
+
+    def test_dictation_defaults_off(
+        self, client: TestClient, make_user, dispatcher, stub_transcriber
+    ) -> None:
+        make_user("alice", "alice-passwort-123")
+        alice = login(client, "alice", "alice-passwort-123")
+        upload(client, alice, "normal.wav")
+        dispatcher.run_all()
+        assert stub_transcriber.calls[0].dictation_mode is False
+
     def test_cancel_queued_job(self, client: TestClient, make_user, dispatcher) -> None:
         make_user("alice", "alice-passwort-123")
         alice = login(client, "alice", "alice-passwort-123")

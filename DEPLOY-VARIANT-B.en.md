@@ -163,6 +163,20 @@ Database migrations run automatically on API start; the admin account from
    processing speed, and per-user storage; "Auditprotokoll" (audit log)
    shows logins and all jobs (CSV export available).
 
+### Dictation mode (spoken punctuation)
+
+Tick **"Diktatmodus"** before recording/uploading to speak punctuation
+aloud — the only way to get marks Whisper can't hear (parentheses, colons,
+semicolons, dashes, quotes). Say the command words in your speech:
+
+`Komma` → , · `Punkt` → . · `Fragezeichen` → ? · `Ausrufezeichen` → ! ·
+`Doppelpunkt` → : · `Semikolon` → ; · `Klammer auf/zu` → ( ) ·
+`Anführungszeichen auf/zu` → „ " · `Gedankenstrich` → – · `neue Zeile`.
+
+Only the exact singular form is a command, so plural content words survive:
+"…mit Doppelpunkt Kommas Semikolon Punkten" → "…mit: Kommas; Punkten". Leave
+it off for normal speech, where Whisper infers basic punctuation itself.
+
 ---
 
 ## Part 5 — Enable GPU (recommended for large-v3)

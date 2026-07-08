@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-07-07 — Dictation mode (spoken punctuation)
+
+- New opt-in **Diktatmodus**: spoken German command words are converted to
+  the actual marks (`Komma`→`,`, `Klammer auf`→`(`, `Doppelpunkt`→`:`, …) —
+  the only way to produce marks Whisper can't infer from audio. Implemented
+  as an engine post-processing stage (`DictationCommands`) plus a
+  `TranscribeOptions.dictation_mode` flag; Variant B exposes a toggle that
+  applies to both recording and file upload.
+- Robustness: only the exact singular command form triggers (so plural
+  content words like "Kommas"/"Punkten" survive), Whisper's own duplicate
+  punctuation is collapsed, spacing and capitalization are rebuilt, and
+  ASR-split compounds ("Ausrufe Zeichen" → "Ausrufezeichen") are glued back
+  before matching.
+- Verified end-to-end on the live Variant B stack with the real
+  large-v3-turbo model. 15 engine unit tests + 2 server API tests added.
+
 ## 2026-07-07 — Recording accuracy improvements
 
 - **Variant A dual-model support**: new `live_engine` config option runs the

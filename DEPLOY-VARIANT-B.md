@@ -163,6 +163,22 @@ aus `.env` wird beim allerersten Start angelegt.
    Verarbeitungsgeschwindigkeit und Speicherverbrauch pro Benutzer; das
    „Auditprotokoll" zeigt Anmeldungen und alle Aufträge (CSV-Export).
 
+### Diktatmodus (Satzzeichen ansagen)
+
+Setzen Sie vor Aufnahme/Upload das Häkchen **„Diktatmodus"**, um Satzzeichen
+mitzusprechen — die einzige Möglichkeit, Zeichen zu erhalten, die Whisper
+nicht hören kann (Klammern, Doppelpunkt, Semikolon, Gedankenstrich,
+Anführungszeichen). Sagen Sie die Befehlswörter im Text mit:
+
+`Komma` → , · `Punkt` → . · `Fragezeichen` → ? · `Ausrufezeichen` → ! ·
+`Doppelpunkt` → : · `Semikolon` → ; · `Klammer auf/zu` → ( ) ·
+`Anführungszeichen auf/zu` → „ " · `Gedankenstrich` → – · `neue Zeile`.
+
+Nur die exakte Einzahlform ist ein Befehl, daher bleiben Inhaltswörter im
+Plural erhalten: „…mit Doppelpunkt Kommas Semikolon Punkten" → „…mit:
+Kommas; Punkten". Für normale Sprache ausgeschaltet lassen — dort setzt
+Whisper die Basis-Satzzeichen selbst.
+
 ---
 
 ## Teil 5 — GPU aktivieren (empfohlen für large-v3)

@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from engine.config import TranscribeOptions
-from engine.postprocess import GermanNormalizer, Redactor
+from engine.postprocess import DictationCommands, GermanNormalizer, Redactor
 from engine.types import TranscriptResult
 
 
@@ -45,10 +45,13 @@ class Pipeline:
 def build_default_pipeline(options: TranscribeOptions) -> Pipeline:
     """Assemble the standard post-processing chain for a job.
 
-    Order matters: normalization first (so redaction regexes match cleaned
-    text), redaction last (nothing after it may reintroduce raw text).
+    Order matters: dictation first (turns spoken commands into marks), then
+    normalization (cleans spacing and collapses any leftover duplicate
+    punctuation), redaction last (nothing after it may reintroduce raw text).
     """
     stages: list[Stage] = []
+    if options.dictation_mode:
+        stages.append(DictationCommands())
     if options.normalize_german:
         stages.append(
             GermanNormalizer(

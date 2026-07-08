@@ -65,6 +65,7 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
   const [recording, setRecording] = useState(false);
   const [recordError, setRecordError] = useState<string | null>(null);
   const [audioProcessing, setAudioProcessing] = useState(false);
+  const [dictationMode, setDictationMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recorderRef = useRef<Recorder | null>(null);
   const pcmRef = useRef<Int16Array[]>([]);
@@ -110,6 +111,7 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
         const body = new FormData();
         body.append("file", file);
         if (initialPrompt.trim()) body.append("initial_prompt", initialPrompt.trim());
+        if (dictationMode) body.append("dictation", "true");
         const response = await apiFetch("/api/jobs", { method: "POST", body });
         if (!response.ok) {
           const detail = await response
@@ -243,6 +245,25 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
             value={initialPrompt}
             onChange={(event) => setInitialPrompt(event.target.value)}
           />
+        </div>
+        <div>
+          <label>
+            <input
+              type="checkbox"
+              checked={dictationMode}
+              onChange={(event) => setDictationMode(event.target.checked)}
+            />{" "}
+            Diktatmodus — gesprochene Satzzeichen umsetzen
+          </label>
+          {dictationMode && (
+            <p className="hint">
+              Sprechen Sie die Satzzeichen mit: „Komma“ →&nbsp;, · „Punkt“ →&nbsp;. ·
+              „Fragezeichen“ →&nbsp;? · „Ausrufezeichen“ →&nbsp;! · „Doppelpunkt“ →&nbsp;: ·
+              „Semikolon“ →&nbsp;; · „Klammer auf/zu“ →&nbsp;( ) ·
+              „Anführungszeichen auf/zu“ →&nbsp;„ “ · „Gedankenstrich“ →&nbsp;– ·
+              „neue Zeile“. Gilt für Aufnahme und Datei-Upload.
+            </p>
+          )}
         </div>
         {error && (
           <p id="submit-error" className="job-status" data-status="error">

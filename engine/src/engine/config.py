@@ -95,6 +95,10 @@ class TranscribeOptions(BaseModel):
     word_timestamps: bool = True
     condition_on_previous_text: bool = True
     temperature: float = Field(default=0.0, ge=0.0)
+    dictation_mode: bool = False
+    """Spoken-punctuation mode: convert dictated command words ("Komma",
+    "Punkt", "Klammer auf", …) into the actual marks. Opt-in — it reinterprets
+    common words, so only enable it when the speaker is dictating punctuation."""
     normalize_german: bool = True
     normalizer_decimal_comma: bool = False
     normalizer_thousands_grouping: bool = False
