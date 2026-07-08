@@ -67,6 +67,24 @@ class TestSplitCompounds:
         assert dictation.apply("eins Doppel Punkt zwei") == "Eins: zwei"
 
 
+class TestWhisperPunctuationAroundCommands:
+    """Real-world: natural pauses make Whisper attach its own punctuation to
+    the command words ("… ich, Gedankenstrich, nachdem …"). That must not stop
+    the command from matching, and Whisper's stray marks are dropped."""
+
+    def test_dashes_wrapped_in_whisper_commas(self, dictation: DictationCommands) -> None:
+        spoken = "Als ich, Gedankenstrich, nachdem ich gelernt hatte, Gedankenstrich, am Abend"
+        assert dictation.apply(spoken) == "Als ich – nachdem ich gelernt hatte – am Abend"
+
+    def test_parens_and_trailing_comma(self, dictation: DictationCommands) -> None:
+        spoken = "Heimweg Klammer auf, es war dunkel, Klammer zu, Komma, bemerkte ich"
+        assert dictation.apply(spoken) == "Heimweg (es war dunkel), bemerkte ich"
+
+    def test_command_with_trailing_period(self, dictation: DictationCommands) -> None:
+        # "neue Zeile." — Whisper put a period on the second word
+        assert dictation.apply("erste Zeile Neue Zeile. zweite") == "Erste Zeile\nZweite"
+
+
 class TestCapitalization:
     def test_first_word_and_after_period(self, dictation: DictationCommands) -> None:
         assert dictation.apply("hallo Punkt wie geht es dir Fragezeichen") == (

@@ -87,6 +87,15 @@ _SPACING: dict[str, tuple[bool, bool]] = {
 
 _SENTENCE_ENDERS = ".!?\n"
 
+# Whisper attaches its own inferred punctuation to words, especially around
+# the pauses a speaker makes near a dictated command ("Gedankenstrich" spoken
+# with pauses becomes ", Gedankenstrich,"). In dictation mode ALL punctuation
+# comes from the spoken commands, so this outer punctuation is stripped from
+# every token — both to make commands match, and to drop Whisper's now-stray
+# marks. Internal characters (hyphens in "E-Mail", the comma in "3,5") are
+# left untouched because ``str.strip`` only removes leading/trailing chars.
+_OUTER_PUNCT = ",.;:!?…\"„“”«»()[]"
+
 
 class DictationCommands:
     """Convert spoken German punctuation words into marks."""
@@ -94,13 +103,18 @@ class DictationCommands:
     def apply(self, text: str) -> str:
         for pattern, joined in _SPLIT_COMPOUNDS:
             text = pattern.sub(joined, text)
-        tokens = text.split()
+        # core = token without Whisper's own outer punctuation
+        cores = [token.strip(_OUTER_PUNCT) for token in text.split()]
         # atoms: (text, space_before, space_after)
         atoms: list[tuple[str, bool, bool]] = []
         i = 0
-        while i < len(tokens):
-            low = tokens[i].lower()
-            pair = (low, tokens[i + 1].lower()) if i + 1 < len(tokens) else None
+        while i < len(cores):
+            core = cores[i]
+            if not core:
+                i += 1
+                continue  # token was pure Whisper punctuation — drop it
+            low = core.lower()
+            pair = (low, cores[i + 1].lower()) if i + 1 < len(cores) else None
             if pair is not None and pair in _DOUBLE:
                 mark = _DOUBLE[pair]
                 atoms.append((mark, *_SPACING[mark]))
@@ -110,7 +124,7 @@ class DictationCommands:
                 atoms.append((mark, *_SPACING[mark]))
                 i += 1
             else:
-                atoms.append((tokens[i], True, True))
+                atoms.append((core, True, True))
                 i += 1
 
         out: list[str] = []
