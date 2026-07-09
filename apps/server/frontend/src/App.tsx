@@ -6,8 +6,15 @@ import type { User } from "./types";
 import { AdminView } from "./views/AdminView";
 import { JobsView } from "./views/JobsView";
 import { LoginView } from "./views/LoginView";
+import { VocabularyView } from "./views/VocabularyView";
 
-type ViewId = "jobs" | "admin";
+type ViewId = "jobs" | "vocabulary" | "admin";
+
+const VIEW_TITLES: Record<ViewId, string> = {
+  jobs: "Meine Transkriptionen",
+  vocabulary: "Wörterbuch",
+  admin: "Administration",
+};
 
 function AppShell() {
   const { announce } = useAnnouncer();
@@ -79,6 +86,15 @@ function AppShell() {
                 Meine Transkriptionen
               </button>
             </li>
+            <li>
+              <button
+                type="button"
+                aria-current={view === "vocabulary" ? "page" : undefined}
+                onClick={() => setView("vocabulary")}
+              >
+                Wörterbuch
+              </button>
+            </li>
             {me.role === "admin" && (
               <li>
                 <button
@@ -101,13 +117,11 @@ function AppShell() {
       <main id="main" tabIndex={-1}>
         <section aria-labelledby="section-heading">
           <h2 id="section-heading" tabIndex={-1} ref={headingRef}>
-            {view === "admin" ? "Administration" : "Meine Transkriptionen"}
+            {VIEW_TITLES[view]}
           </h2>
-          {view === "jobs" ? (
-            <JobsView onAuthExpired={() => setMe(null)} />
-          ) : (
-            <AdminView onAuthExpired={() => setMe(null)} />
-          )}
+          {view === "jobs" && <JobsView onAuthExpired={() => setMe(null)} />}
+          {view === "vocabulary" && <VocabularyView onAuthExpired={() => setMe(null)} />}
+          {view === "admin" && <AdminView onAuthExpired={() => setMe(null)} />}
         </section>
       </main>
     </>

@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-07-09 — Custom vocabulary / correction dictionary (Variant B)
+
+- Per-user **Wörterbuch**: each entry is a correct *term* (boosted into
+  hotwords so the model recognizes it) plus optional *variants* (common
+  mishears auto-corrected to the term). Applied automatically to every job —
+  upload and recording alike.
+- Engine: `CorrectionRule` + `TranscribeOptions.corrections` +
+  `VocabularyCorrections` post-processing stage (whole-word, case-insensitive,
+  sentence-initial capitalization preserved, applied to segment and word-level
+  text). Runs after normalization, before redaction.
+- Server: `VocabularyEntry` model + migration 0004, CRUD API
+  `/api/vocabulary` (per-user, isolated), combined with any per-job hotwords.
+- Frontend: Wörterbuch management view.
+- Verified end-to-end on the live stack: a term/variant pair actually
+  corrected the transcript coming out of the real worker. 11 engine + 12
+  server + 3 frontend tests added.
+
 ## 2026-07-08 — Dictation mode: professional enhancement
 
 - Much broader command vocabulary: square/curly brackets (`eckige/geschweifte

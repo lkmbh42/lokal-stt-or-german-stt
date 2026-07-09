@@ -163,6 +163,16 @@ Database migrations run automatically on API start; the admin account from
    processing speed, and per-user storage; "Auditprotokoll" (audit log)
    shows logins and all jobs (CSV export available).
 
+### Custom dictionary (Wörterbuch)
+
+Each user has a personal dictionary under the **Wörterbuch** tab. Every entry
+is a **term** (the correct spelling, e.g. `Cappel`) plus optional **variants**
+(common mishears, e.g. `Kabel, Kappel`). The term is boosted so the model
+recognizes it, and the variants are auto-corrected to the term — applied to
+**every** transcription (upload and recording) automatically. This is the
+right place to teach the tool your names, places, and domain terms once so
+you stop re-typing them and stop seeing the same misrecognitions.
+
 ### Olympus dictation files (.DS2 / .dss)
 
 Files from Olympus recorders (`.DS2` = DSS Pro) **cannot be uploaded

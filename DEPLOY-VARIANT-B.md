@@ -163,6 +163,17 @@ aus `.env` wird beim allerersten Start angelegt.
    Verarbeitungsgeschwindigkeit und Speicherverbrauch pro Benutzer; das
    „Auditprotokoll" zeigt Anmeldungen und alle Aufträge (CSV-Export).
 
+### Wörterbuch (persönliche Begriffe)
+
+Jede:r Nutzer:in hat unter dem Reiter **Wörterbuch** ein persönliches
+Wörterbuch. Jeder Eintrag besteht aus einem **Begriff** (korrekte
+Schreibweise, z. B. `Cappel`) und optionalen **Varianten** (häufige
+Fehlschreibungen, z. B. `Kabel, Kappel`). Der Begriff wird bei der Erkennung
+bevorzugt, die Varianten werden automatisch zum Begriff korrigiert — bei
+**jeder** Transkription (Upload und Aufnahme). Hier bringen Sie dem Tool
+einmalig Namen, Orte und Fachbegriffe bei, statt sie ständig neu einzugeben
+und dieselben Fehler erneut zu sehen.
+
 ### Olympus-Diktatdateien (.DS2 / .dss)
 
 Dateien von Olympus-Recordern (`.DS2` = DSS Pro) können **nicht direkt

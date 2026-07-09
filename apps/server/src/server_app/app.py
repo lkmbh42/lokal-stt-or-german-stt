@@ -14,6 +14,7 @@ from server_app import __version__
 from server_app.api.admin import router as admin_router
 from server_app.api.auth import router as auth_router
 from server_app.api.jobs import router as jobs_router
+from server_app.api.vocabulary import router as vocabulary_router
 from server_app.auth.backend import AuthBackend, LocalAuthBackend
 from server_app.auth.passwords import hash_password
 from server_app.auth.tokens import TokenService
@@ -107,6 +108,7 @@ def create_app(
 
     app.include_router(auth_router)
     app.include_router(jobs_router)
+    app.include_router(vocabulary_router)
     app.include_router(admin_router)
 
     @app.get("/api/health")

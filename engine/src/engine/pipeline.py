@@ -14,7 +14,12 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from engine.config import TranscribeOptions
-from engine.postprocess import DictationCommands, GermanNormalizer, Redactor
+from engine.postprocess import (
+    DictationCommands,
+    GermanNormalizer,
+    Redactor,
+    VocabularyCorrections,
+)
 from engine.types import TranscriptResult
 
 
@@ -47,7 +52,8 @@ def build_default_pipeline(options: TranscribeOptions) -> Pipeline:
 
     Order matters: dictation first (turns spoken commands into marks), then
     normalization (cleans spacing and collapses any leftover duplicate
-    punctuation), redaction last (nothing after it may reintroduce raw text).
+    punctuation), then vocabulary corrections (fix mishears on clean text),
+    redaction last (nothing after it may reintroduce raw text).
     """
     stages: list[Stage] = []
     if options.dictation_mode:
@@ -59,6 +65,8 @@ def build_default_pipeline(options: TranscribeOptions) -> Pipeline:
                 thousands_grouping=options.normalizer_thousands_grouping,
             )
         )
+    if options.corrections:
+        stages.append(VocabularyCorrections(options.corrections))
     if options.redaction_rules:
         stages.append(Redactor(options.redaction_rules))
     return Pipeline(stages)

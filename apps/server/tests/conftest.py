@@ -49,7 +49,7 @@ class StubTranscriber:
         if on_segment is not None:
             for seg in segments:
                 on_segment(seg)
-        return TranscriptResult(
+        result = TranscriptResult(
             segments=segments,
             info=TranscriptInfo(
                 language="de",
@@ -59,6 +59,12 @@ class StubTranscriber:
                 compute_type="int8",
             ),
         )
+        # mirror the real engine: post-processing runs after inference
+        if options is not None:
+            from engine.pipeline import build_default_pipeline
+
+            result = build_default_pipeline(options).run(result)
+        return result
 
 
 class ManualDispatcher:

@@ -38,10 +38,36 @@ class User(Base):
     monthly_minutes_limit: Mapped[float | None] = mapped_column(Float, default=None)
 
     jobs: Mapped[list[Job]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    vocabulary: Mapped[list[VocabularyEntry]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
 
     @property
     def is_admin(self) -> bool:
         return self.role == "admin"
+
+
+class VocabularyEntry(Base):
+    """A user's custom-dictionary entry: a term that is boosted for every job,
+    plus optional common mishears that get auto-corrected to it."""
+
+    __tablename__ = "vocabulary_entries"
+    __table_args__ = (Index("ix_vocab_user", "user_id"),)
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default=new_id)
+    user_id: Mapped[str] = mapped_column(
+        String(32), ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    term: Mapped[str] = mapped_column(String(200))
+    """Correct written form — always boosted into hotwords."""
+    variants: Mapped[str] = mapped_column(String(500), default="")
+    """Comma-separated common mishears, each corrected to ``term``."""
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    user: Mapped[User] = relationship(back_populates="vocabulary")
+
+    def variant_list(self) -> list[str]:
+        return [v.strip() for v in self.variants.split(",") if v.strip()]
 
 
 class Job(Base):

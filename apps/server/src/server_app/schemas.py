@@ -78,6 +78,18 @@ class AuditEntryOut(BaseModel):
     ip: str | None
 
 
+class VocabularyEntryOut(BaseModel):
+    id: str
+    term: str
+    variants: str
+    created_at: datetime
+
+
+class VocabularyEntryCreate(BaseModel):
+    term: str = Field(min_length=1, max_length=200)
+    variants: str = Field(default="", max_length=500)
+
+
 class JobOut(BaseModel):
     id: str
     source: str

@@ -25,6 +25,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from server_app import audit
+from server_app.api.vocabulary import build_vocabulary
 from server_app.auth.deps import CurrentUser, get_db
 from server_app.config import ServerSettings
 from server_app.models import Job
@@ -120,11 +121,16 @@ async def create_job(
             ),
         )
 
+    # the user's saved dictionary is applied to every job: terms boost
+    # recognition, variants correct known mishears
+    boost, corrections = build_vocabulary(db, user.id)
+    combined_hotwords = " ".join(part for part in (hotwords, boost) if part and part.strip())
     try:
         options = TranscribeOptions(
             initial_prompt=initial_prompt or None,
-            hotwords=hotwords or None,
+            hotwords=combined_hotwords or None,
             dictation_mode=dictation,
+            corrections=corrections,
         )
     except ValidationError as exc:
         raise HTTPException(status_code=422, detail=json.loads(exc.json())) from exc

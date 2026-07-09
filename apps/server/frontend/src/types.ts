@@ -33,6 +33,13 @@ export interface Quota {
   used_month_minutes: number;
 }
 
+export interface VocabularyEntry {
+  id: string;
+  term: string;
+  variants: string;
+  created_at: string;
+}
+
 export interface AuditEntry {
   id: string;
   created_at: string;

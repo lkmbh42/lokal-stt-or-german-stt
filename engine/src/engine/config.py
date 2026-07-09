@@ -52,6 +52,15 @@ class RedactionRule(BaseModel):
     replacement: str = "[REDIGIERT]"
 
 
+class CorrectionRule(BaseModel):
+    """Whole-word correction from a custom vocabulary: replace ``wrong`` with
+    ``right`` (case-insensitive, sentence-initial capitalization preserved).
+    Used to fix systematic mishears, e.g. ``Kabel`` → ``Cappel``."""
+
+    wrong: str
+    right: str
+
+
 class EngineConfig(BaseModel):
     model: str = "large-v3"
     """Model name (e.g. ``large-v3``, ``large-v3-turbo``, ``tiny``) or a local
@@ -102,6 +111,8 @@ class TranscribeOptions(BaseModel):
     normalize_german: bool = True
     normalizer_decimal_comma: bool = False
     normalizer_thousands_grouping: bool = False
+    corrections: list[CorrectionRule] = Field(default_factory=list)
+    """Custom-vocabulary corrections applied after transcription."""
     redaction_rules: list[RedactionRule] = Field(default_factory=list)
 
     @field_validator("language")
