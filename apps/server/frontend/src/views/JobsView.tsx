@@ -236,6 +236,39 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
     }
   }
 
+  // one toggle, shown in both the upload form and the recording section —
+  // both bound to the same setting so they stay in sync
+  function dictationToggle(showCommands: boolean) {
+    return (
+      <div>
+        <label>
+          <input
+            type="checkbox"
+            checked={dictationMode}
+            disabled={recording}
+            onChange={(event) => setDictationMode(event.target.checked)}
+          />{" "}
+          <strong>Diktatmodus</strong> — gesprochene Satzzeichen umsetzen{" "}
+          <span className="hint">(gilt für Upload und Aufnahme)</span>
+        </label>
+        {dictationMode && showCommands && (
+          <p className="hint">
+            Satzzeichen mitsprechen: „Komma“ →&nbsp;, · „Punkt“ →&nbsp;. ·
+            „Fragezeichen“ →&nbsp;? · „Ausrufezeichen“ →&nbsp;! · „Doppelpunkt“ →&nbsp;: ·
+            „Semikolon“ →&nbsp;; · „Gedankenstrich“ →&nbsp;– · „Bindestrich“ →&nbsp;- ·
+            „Schrägstrich“ →&nbsp;/ · „Klammer auf/zu“ →&nbsp;( ) · „eckige/geschweifte
+            Klammer auf/zu“ →&nbsp;[ ] {"{ }"} · „Anführungszeichen auf/zu“ →&nbsp;„ “ ·
+            „Paragraf“ →&nbsp;§ · „Prozentzeichen“ →&nbsp;% · „neue Zeile“ · „neuer Absatz“.
+            Namen groß schreiben: „großschreiben“ vor dem Wort.
+          </p>
+        )}
+        {dictationMode && !showCommands && (
+          <p className="hint">Befehlsliste siehe oben unter „Neue Transkription“.</p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
       {quota && formatQuota(quota) && <p>{formatQuota(quota)}</p>}
@@ -267,6 +300,7 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
             onChange={(event) => setInitialPrompt(event.target.value)}
           />
         </div>
+        {dictationToggle(true)}
         {error && (
           <p id="submit-error" className="job-status" data-status="error">
             {error}
@@ -282,29 +316,7 @@ export function JobsView({ onAuthExpired }: { onAuthExpired: () => void }) {
         Die Aufnahme wird nach dem Stoppen als Auftrag hochgeladen und in voller
         Qualität transkribiert.
       </p>
-      <div>
-        <label>
-          <input
-            type="checkbox"
-            checked={dictationMode}
-            disabled={recording}
-            onChange={(event) => setDictationMode(event.target.checked)}
-          />{" "}
-          <strong>Diktatmodus</strong> — gesprochene Satzzeichen umsetzen{" "}
-          <span className="hint">(gilt auch für Datei-Upload)</span>
-        </label>
-        {dictationMode && (
-          <p className="hint">
-            Satzzeichen mitsprechen: „Komma“ →&nbsp;, · „Punkt“ →&nbsp;. ·
-            „Fragezeichen“ →&nbsp;? · „Ausrufezeichen“ →&nbsp;! · „Doppelpunkt“ →&nbsp;: ·
-            „Semikolon“ →&nbsp;; · „Gedankenstrich“ →&nbsp;– · „Bindestrich“ →&nbsp;- ·
-            „Schrägstrich“ →&nbsp;/ · „Klammer auf/zu“ →&nbsp;( ) · „eckige/geschweifte
-            Klammer auf/zu“ →&nbsp;[ ] { } · „Anführungszeichen auf/zu“ →&nbsp;„ “ ·
-            „Paragraf“ →&nbsp;§ · „Prozentzeichen“ →&nbsp;% · „neue Zeile“ · „neuer Absatz“.
-            Namen groß schreiben: „großschreiben“ vor dem Wort.
-          </p>
-        )}
-      </div>
+      {dictationToggle(false)}
       <label>
         <input
           type="checkbox"
