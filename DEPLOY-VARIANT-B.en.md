@@ -163,6 +163,23 @@ Database migrations run automatically on API start; the admin account from
    processing speed, and per-user storage; "Auditprotokoll" (audit log)
    shows logins and all jobs (CSV export available).
 
+### Olympus dictation files (.DS2 / .dss)
+
+Files from Olympus recorders (`.DS2` = DSS Pro) **cannot be uploaded
+directly** — the DSS Pro codec is proprietary and no open component (ffmpeg)
+can decode it. The app rejects them with a message telling the user to
+convert first.
+
+Workflow: in **Olympus ODMS** (the software shipped with the recorders),
+export the recording as **WAV or MP3**, then upload that file. ODMS can be
+set to auto-download from the recorder and auto-convert to WAV into a folder,
+so the person only docks the recorder. Audio quality is unchanged — it is
+only a container/codec conversion.
+
+*(Planned, once the tool runs on the same PC as ODMS: an optional
+watched-folder auto-import so converted WAV files are picked up
+automatically. Ask when you reach that stage.)*
+
 ### Dictation mode (spoken punctuation)
 
 Tick **"Diktatmodus"** before recording/uploading to speak punctuation

@@ -37,6 +37,18 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 ALLOWED_UPLOAD_EXTENSIONS = {".mp3", ".wav", ".m4a", ".mp4", ".flac"}
 
+# Olympus dictation formats: DSS Pro (.ds2) uses a proprietary codec that
+# ffmpeg cannot decode, and .dss SP is niche. Give a specific, actionable
+# message instead of the generic "unsupported type" so dictation users know
+# to convert with Olympus ODMS first.
+CONVERSION_REQUIRED_EXTENSIONS = {".ds2", ".dss"}
+_CONVERSION_MESSAGE = (
+    "Olympus-Diktatdateien (.ds2 / .dss) können nicht direkt verarbeitet werden — "
+    "der DSS-Pro-Codec ist herstellergebunden. Bitte die Aufnahme zuerst mit "
+    "Olympus ODMS (oder Sonority) in WAV oder MP3 umwandeln und die umgewandelte "
+    "Datei hochladen."
+)
+
 MEDIA_TYPES = {
     OutputFormat.TXT: "text/plain; charset=utf-8",
     OutputFormat.SRT: "application/x-subrip",
@@ -97,6 +109,8 @@ async def create_job(
 ) -> JobOut:
     original = _sanitize_filename(file.filename)
     extension = Path(original).suffix.lower()
+    if extension in CONVERSION_REQUIRED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=_CONVERSION_MESSAGE)
     if extension not in ALLOWED_UPLOAD_EXTENSIONS:
         raise HTTPException(
             status_code=400,

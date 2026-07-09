@@ -163,6 +163,23 @@ aus `.env` wird beim allerersten Start angelegt.
    Verarbeitungsgeschwindigkeit und Speicherverbrauch pro Benutzer; das
    „Auditprotokoll" zeigt Anmeldungen und alle Aufträge (CSV-Export).
 
+### Olympus-Diktatdateien (.DS2 / .dss)
+
+Dateien von Olympus-Recordern (`.DS2` = DSS Pro) können **nicht direkt
+hochgeladen** werden — der DSS-Pro-Codec ist herstellergebunden und von
+keiner freien Komponente (ffmpeg) dekodierbar. Die App weist sie mit einem
+entsprechenden Hinweis ab.
+
+Ablauf: in **Olympus ODMS** (die mit den Recordern gelieferte Software) die
+Aufnahme als **WAV oder MP3** exportieren, dann diese Datei hochladen. ODMS
+kann so eingestellt werden, dass es automatisch vom Recorder herunterlädt und
+in einen Ordner nach WAV umwandelt — der/die Nutzer:in dockt nur den Recorder
+an. Die Audioqualität bleibt unverändert (reine Formatumwandlung).
+
+*(Geplant, sobald das Tool auf demselben PC wie ODMS läuft: optionaler
+Überwachungsordner-Import, damit umgewandelte WAV-Dateien automatisch
+übernommen werden. Melden Sie sich, wenn Sie so weit sind.)*
+
 ### Diktatmodus (Satzzeichen ansagen)
 
 Setzen Sie vor Aufnahme/Upload das Häkchen **„Diktatmodus"**, um Satzzeichen

@@ -110,6 +110,17 @@ async def create_job(
     config = _config(request)
     original = _sanitize_filename(file.filename)
     extension = Path(original).suffix.lower()
+    if extension in {".ds2", ".dss"}:
+        # Olympus DSS Pro uses a proprietary codec ffmpeg cannot decode —
+        # point the user at the required conversion step.
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Olympus-Diktatdateien (.ds2 / .dss) können nicht direkt "
+                "verarbeitet werden. Bitte zuerst mit Olympus ODMS in WAV oder "
+                "MP3 umwandeln und die umgewandelte Datei hochladen."
+            ),
+        )
     if extension not in ALLOWED_UPLOAD_EXTENSIONS:
         raise HTTPException(
             status_code=400,

@@ -142,6 +142,16 @@ class TestUploadValidation:
         alice = login(client, "alice", "alice-passwort-123")
         assert upload(client, alice, "virus.exe").status_code == 400
 
+    def test_olympus_ds2_gets_conversion_guidance(
+        self, client: TestClient, make_user
+    ) -> None:
+        make_user("alice", "alice-passwort-123")
+        alice = login(client, "alice", "alice-passwort-123")
+        response = upload(client, alice, "diktat.ds2")
+        assert response.status_code == 400
+        detail = response.json()["detail"]
+        assert "ODMS" in detail and "WAV" in detail
+
     def test_oversize(self, client: TestClient, make_user) -> None:
         make_user("alice", "alice-passwort-123")
         alice = login(client, "alice", "alice-passwort-123")
