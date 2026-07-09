@@ -19,6 +19,8 @@ models/
 
 # Generated audio fixtures (regenerate with engine/scripts/make_fixtures.py)
 engine/tests/fixtures/*.wav
+# Generated benchmark audio (regenerate with engine/scripts/benchmark.py)
+engine/tests/benchmark/
 
 # Transcription outputs
 out/

@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-07-09 — German model evaluation (Tier 1)
+
+- New reproducible WER benchmark harness (`engine/scripts/benchmark.py`): 10
+  natural German sentences synthesized locally, optional noise degradation,
+  normalized WER, side-by-side model comparison.
+- Evaluated `primeline/whisper-large-v3-turbo-german` (converted to CT2)
+  against the deployed `large-v3-turbo`. **Conclusion: keep turbo.** Clean
+  German 0.0 % vs 1.0 % (fine-tune adds a ß→ss spelling change); hard 0 dB
+  noise 5.3 % vs 4.5 % (fine-tune marginally better, within sample noise).
+  Not a decisive win; the custom dictionary is the better targeted lever.
+  Full write-up + honest caveats in `docs/model-benchmark.md`.
+- `torch`/`transformers` were used only for the one-time conversion — not
+  runtime dependencies; Docker images are unaffected.
+
 ## 2026-07-09 — Custom vocabulary / correction dictionary (Variant B)
 
 - Per-user **Wörterbuch**: each entry is a correct *term* (boosted into

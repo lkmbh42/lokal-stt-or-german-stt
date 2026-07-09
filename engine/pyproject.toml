@@ -58,3 +58,4 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.ruff.lint.per-file-ignores]
 # embedded PowerShell here-strings can't be wrapped
 "scripts/make_fixtures.py" = ["E501"]
+"scripts/benchmark.py" = ["E501"]

@@ -46,6 +46,20 @@ instead of downloading. Keep the previous model directory until sign-off
    throughput and therefore quota/ETA expectations; adjust
    `STT_MAX_CONCURRENT_JOBS` to VRAM (large-v3 float16 ≈ 4.7 GB/slot).
 
+## Benchmarking before you switch
+
+Before adopting a different model, measure it — don't guess. The repo ships a
+reproducible WER harness:
+
+```
+python engine/scripts/benchmark.py --models large-v3-turbo,<new-model> --noise-snr 0
+```
+
+A worked example (turbo vs. a German fine-tune, with the honest conclusion to
+**stay on turbo**) is in [model-benchmark.md](model-benchmark.md). Note the
+`tokenizer.json`/`preprocessor_config.json` copy step there — fine-tunes often
+omit those and borrow them from the base model.
+
 ## Compatibility notes
 
 - The engine forces `language="de"`; multilingual checkpoints are fine,
