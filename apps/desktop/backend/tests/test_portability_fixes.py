@@ -11,19 +11,13 @@ from __future__ import annotations
 import shutil
 from pathlib import Path
 
+from conftest import wait_for_status  # type: ignore[import-not-found]
 from fastapi.testclient import TestClient
+from tests_helpers import upload  # type: ignore[import-not-found]
 
 from desktop_app.app import create_app
 from desktop_app.config import AppConfig
 from desktop_app.db import JobRecord, JobStore
-
-from tests_helpers import upload
-
-try:  # conftest helper (wait_for_status) is importable either way
-    from conftest import wait_for_status
-except ImportError:  # pragma: no cover
-    from tests.conftest import wait_for_status  # type: ignore
-
 
 # ---------------------------------------------------------------- #1 paths
 
@@ -38,10 +32,16 @@ def test_to_rel_to_abs_roundtrip(tmp_path: Path) -> None:
 
 
 def test_to_abs_reroots_a_moved_absolute_path(tmp_path: Path) -> None:
-    """An absolute path from an OLD machine/location re-roots onto the current
-    data dir — this is exactly the 500 we hit after the data folder moved PCs."""
+    """An absolute path under a DIFFERENT root (as if the data came from another
+    machine / location) re-roots onto the current data dir — this is exactly the
+    500 we hit after the data folder moved PCs.
+
+    Built with the OS's own absolute path form so the test runs on Linux CI too;
+    the app itself only ever runs on Windows.
+    """
     cfg = AppConfig(data_dir=tmp_path / "data")
-    stale = r"C:\Users\someoneelse\OldPlace\data\transcripts\job123.json"
+    stale = str(tmp_path / "elsewhere" / "data" / "transcripts" / "job123.json")
+    assert Path(stale).is_absolute()
     resolved = cfg.to_abs(stale)
     assert resolved == cfg.transcripts_dir / "job123.json"
 
