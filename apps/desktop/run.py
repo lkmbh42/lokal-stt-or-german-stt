@@ -20,7 +20,6 @@ import urllib.request
 import webbrowser
 
 import uvicorn
-
 from desktop_app.app import create_app
 from desktop_app.config import load_app_config
 
