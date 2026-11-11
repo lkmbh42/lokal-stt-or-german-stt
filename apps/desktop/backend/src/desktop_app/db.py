@@ -108,3 +108,19 @@ class JobStore:
         with self._connect() as conn:
             cur = conn.execute("DELETE FROM jobs WHERE id = ?", (job_id,))
         return cur.rowcount > 0
+
+    def fail_interrupted(self) -> int:
+        """Mark jobs left 'queued'/'processing' as 'error'.
+
+        This is a single-process app: if any job is still in a running state at
+        startup, the previous run crashed or was killed mid-job (e.g. a native
+        decoder crash the Python layer can't catch). Without this they stay
+        "processing" forever. Returns how many were reset.
+        """
+        with self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE jobs SET status = 'error', error = ?, finished_at = ? "
+                "WHERE status IN ('queued', 'processing')",
+                ("Durch einen Neustart der Anwendung abgebrochen.", utcnow()),
+            )
+        return cur.rowcount

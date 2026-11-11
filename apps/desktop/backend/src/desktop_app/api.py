@@ -16,7 +16,7 @@ from typing import Annotated
 from engine import __version__ as engine_version
 from engine.config import TranscribeOptions
 from engine.formats import render
-from engine.types import OutputFormat
+from engine.types import OutputFormat, TranscriptResult
 from fastapi import APIRouter, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, ValidationError
@@ -76,6 +76,26 @@ def _store(request: Request) -> JobStore:
 
 def _manager(request: Request) -> JobManager:
     return request.app.state.manager  # type: ignore[no-any-return]
+
+
+def _load_or_http(request: Request, record: JobRecord) -> TranscriptResult:
+    """Load a transcript, mapping a missing/corrupt file to a clean HTTP error
+    (404/422) instead of an unhandled 500."""
+    try:
+        return load_result(record, _config(request))
+    except FileNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "Das Transkript zu diesem Auftrag wurde nicht gefunden. "
+                "Die Datei fehlt oder wurde verschoben."
+            ),
+        ) from None
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail="Das Transkript konnte nicht gelesen werden (beschädigte Datei).",
+        ) from None
 
 
 @router.get("/health")
@@ -180,8 +200,12 @@ def get_job(request: Request, job_id: str) -> JobOut:
     record = _get_record(request, job_id)
     out = JobOut.from_record(record)
     if record.status == "done" and record.transcript_path:
-        result = load_result(record)
-        out.text_preview = result.text[:2000]
+        # Preview is best-effort: a missing/corrupt transcript must not break
+        # viewing the job itself — just omit the preview.
+        try:
+            out.text_preview = load_result(record, _config(request)).text[:2000]
+        except (FileNotFoundError, ValueError):
+            out.text_preview = None
     return out
 
 
@@ -191,9 +215,11 @@ def delete_job(request: Request, job_id: str) -> Response:
     if record.status in ("queued", "processing"):
         _manager(request).cancel(job_id)
         return Response(status_code=204)
-    for path in (record.audio_path, record.transcript_path):
-        if path:
-            Path(path).unlink(missing_ok=True)
+    config = _config(request)
+    for stored in (record.audio_path, record.transcript_path):
+        resolved = config.to_abs(stored)
+        if resolved:
+            resolved.unlink(missing_ok=True)
     _store(request).delete(job_id)
     return Response(status_code=204)
 
@@ -203,7 +229,7 @@ def get_transcript(request: Request, job_id: str) -> Response:
     record = _get_record(request, job_id)
     if record.status != "done" or not record.transcript_path:
         raise HTTPException(status_code=409, detail="Auftrag ist noch nicht fertig")
-    result = load_result(record)
+    result = _load_or_http(request, record)
     return Response(
         content=result.model_dump_json(), media_type="application/json"
     )
@@ -214,7 +240,7 @@ def export_job(request: Request, job_id: str, format: str = "txt") -> Response:
     record = _get_record(request, job_id)
     if record.status != "done" or not record.transcript_path:
         raise HTTPException(status_code=409, detail="Auftrag ist noch nicht fertig")
-    result = load_result(record)
+    result = _load_or_http(request, record)
     stem = Path(record.original_filename).stem or "transkript"
 
     if format == "all":

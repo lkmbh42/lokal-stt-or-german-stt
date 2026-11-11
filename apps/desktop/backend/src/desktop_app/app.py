@@ -66,6 +66,15 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        # A crash or kill leaves jobs stuck "processing" (a native decoder crash
+        # can't be caught in Python). On startup, fail any such leftover job so
+        # it can't hang forever and the user can delete or re-submit it.
+        interrupted = store.fail_interrupted()
+        if interrupted:
+            logger.warning(
+                "Reset %d interrupted job(s) from a previous run to 'error'.",
+                interrupted,
+            )
         await manager.start()
         logger.info(
             "Desktop STT ready on http://%s:%s (model=%s)",
