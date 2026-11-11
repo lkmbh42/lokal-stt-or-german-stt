@@ -74,7 +74,7 @@ class JobManager:
         record = JobRecord(
             source=source,  # type: ignore[arg-type]
             original_filename=original_filename,
-            audio_path=str(audio_path),
+            audio_path=self._config.to_rel(audio_path),
             options_json=options.model_dump_json(exclude_defaults=True),
         )
         self._store.add(record)
@@ -135,7 +135,8 @@ class JobManager:
         # the fact for *future* segments by pre-decoding here:
         from engine.audio import decode_audio
 
-        waveform = decode_audio(record.audio_path or "")
+        audio_abs = self._config.to_abs(record.audio_path)
+        waveform = decode_audio(str(audio_abs) if audio_abs else "")
         duration_hint = len(waveform) / 16_000.0
 
         result = self._transcriber.transcribe(waveform, options, on_segment=on_segment)
@@ -149,14 +150,21 @@ class JobManager:
             status="done",
             progress=1.0,
             duration=result.info.duration,
-            transcript_path=str(transcript_path),
+            transcript_path=self._config.to_rel(transcript_path),
             finished_at=utcnow(),
         )
         logger.info("Job %s done (%.1fs audio)", record.id, result.info.duration)
 
 
-def load_result(record: JobRecord) -> TranscriptResult:
-    if record.transcript_path is None:
-        raise FileNotFoundError(f"job {record.id} has no transcript")
-    raw = Path(record.transcript_path).read_text(encoding="utf-8")
+def load_result(record: JobRecord, config: AppConfig) -> TranscriptResult:
+    """Load a finished job's transcript.
+
+    Resolves the stored (relative) path against the current ``data_dir`` and
+    raises a clear error the HTTP layer turns into a 404/422 instead of an
+    unhandled 500 when the file is missing or unreadable.
+    """
+    path = config.to_abs(record.transcript_path)
+    if path is None or not path.exists():
+        raise FileNotFoundError(f"transcript missing for job {record.id}")
+    raw = path.read_text(encoding="utf-8")
     return TranscriptResult.model_validate_json(raw)

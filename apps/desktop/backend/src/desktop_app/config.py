@@ -95,6 +95,45 @@ class AppConfig(BaseModel):
         self.uploads_dir.mkdir(parents=True, exist_ok=True)
         self.transcripts_dir.mkdir(parents=True, exist_ok=True)
 
+    def to_rel(self, p: str | Path) -> str:
+        """Store a path relative to ``data_dir`` so the data folder stays portable.
+
+        The app is "portable": its data dir can move (USB stick, another user
+        profile, a different drive letter). Storing absolute paths breaks every
+        job the moment that happens, so persisted paths are kept relative and
+        re-joined to the *current* ``data_dir`` on read (see :meth:`to_abs`).
+        """
+        p = Path(p)
+        try:
+            return p.resolve().relative_to(self.data_dir.resolve()).as_posix()
+        except ValueError:
+            # outside data_dir (shouldn't normally happen) — keep as-is, still readable
+            return p.as_posix()
+
+    def to_abs(self, stored: str | None) -> Path | None:
+        """Resolve a stored path against the current ``data_dir``.
+
+        Handles three cases so older installs self-heal without a migration:
+          * relative (new rows)           -> ``data_dir / stored``
+          * absolute and present          -> used as-is
+          * absolute but moved (old rows) -> re-rooted on the ``uploads``/
+            ``transcripts`` segment under the current ``data_dir``
+        Returns ``None`` for an empty/``None`` input.
+        """
+        if not stored:
+            return None
+        p = Path(stored)
+        if not p.is_absolute():
+            return self.data_dir / p
+        if p.exists():
+            return p
+        posix = p.as_posix()
+        for anchor in ("uploads", "transcripts"):
+            marker = f"/{anchor}/"
+            if marker in posix:
+                return self.data_dir / anchor / posix.split(marker, 1)[1]
+        return p
+
 
 def load_app_config(path: str | Path | None) -> AppConfig:
     if path is None:

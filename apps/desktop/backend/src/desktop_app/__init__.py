@@ -5,4 +5,4 @@ HTTP API + WebSocket live transcription + static React frontend. No auth, no
 multi-tenancy, no external services — by design.
 """
 
-__version__ = "0.1.0"
+__version__ = "1.2.0"

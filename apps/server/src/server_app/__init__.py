@@ -5,4 +5,4 @@ Compose stack: nginx → FastAPI API (stateless) → Redis/Celery → GPU worker
 with Postgres for users/jobs. ~10 concurrent users, one shared GPU.
 """
 
-__version__ = "0.1.0"
+__version__ = "1.2.0"
